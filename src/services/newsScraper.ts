@@ -20,7 +20,7 @@ export interface NewsSource {
   region: string;
 }
 
-// Enhanced international news sources with more diverse content
+// Enhanced international news sources with more diverse content and better country mapping
 const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
   // Latest Tech News (August 2025)
   {
@@ -48,7 +48,7 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     url: "https://bbc.com/eu-ai-regulation",
     publishedAt: new Date('2025-08-14T16:45:00Z'),
     category: "Policy",
-    region: "EU"
+    region: "UK"
   },
   {
     title: "China's Baidu Launches Quantum-Safe AI Infrastructure",
@@ -57,7 +57,7 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     url: "https://scmp.com/baidu-quantum-safe",
     publishedAt: new Date('2025-08-13T12:20:00Z'),
     category: "Security",
-    region: "Asia"
+    region: "China"
   },
   {
     title: "Tesla's Robotaxi Network Goes Live in Three Major Cities",
@@ -84,7 +84,7 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     url: "https://asia.nikkei.com/softbank-ai-investment",
     publishedAt: new Date('2025-08-10T11:45:00Z'),
     category: "Investment",
-    region: "Asia"
+    region: "Japan"
   },
   {
     title: "UK's DeepMind Achieves Breakthrough in Protein Folding Prediction",
@@ -102,7 +102,7 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     url: "https://economictimes.com/india-open-source-ai",
     publishedAt: new Date('2025-08-08T08:30:00Z'),
     category: "AI",
-    region: "Asia"
+    region: "India"
   },
   {
     title: "Brazil's Fintech Revolution: AI-Powered Banking for the Unbanked",
@@ -111,9 +111,9 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     url: "https://valor.com.br/brazil-fintech-ai",
     publishedAt: new Date('2025-08-07T14:15:00Z'),
     category: "Fintech",
-    region: "South America"
+    region: "Brazil"
   },
-  // Additional international sources
+  // Additional international sources with better country mapping
   {
     title: "Germany's Siemens Advances Industrial AI with Edge Computing",
     content: "Siemens has announced a breakthrough in industrial AI applications, combining edge computing with machine learning to optimize manufacturing processes in real-time. The new system reduces energy consumption by 25% and increases production efficiency by 30% across various industrial sectors.",
@@ -212,6 +212,151 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     publishedAt: new Date('2025-08-06T16:30:00Z'),
     category: "Gaming",
     region: "Poland"
+  },
+  // More diverse sources for better coverage
+  {
+    title: "Canada's Shopify Integrates AI-Powered E-commerce Solutions",
+    content: "Shopify has launched new AI-powered features for online merchants, including automated product recommendations, dynamic pricing, and intelligent inventory management. These tools help businesses increase sales and reduce operational costs.",
+    source: "The Globe and Mail",
+    url: "https://theglobeandmail.com/shopify-ai-ecommerce",
+    publishedAt: new Date('2025-08-16T13:00:00Z'),
+    category: "E-commerce",
+    region: "Canada"
+  },
+  {
+    title: "Mexico's Grupo Bimbo Uses AI for Sustainable Food Production",
+    content: "Grupo Bimbo has implemented AI systems to optimize its food production processes, reducing waste by 30% and improving energy efficiency. The company is now a leader in sustainable food manufacturing in Latin America.",
+    source: "El Universal",
+    url: "https://eluniversal.com.mx/bimbo-ai-sustainable",
+    publishedAt: new Date('2025-08-15T12:30:00Z'),
+    category: "Sustainability",
+    region: "Mexico"
+  },
+  {
+    title: "South Korea's Samsung Develops Next-Gen AI Chips",
+    content: "Samsung has unveiled its latest AI processor, featuring advanced neural processing units and energy-efficient design. The new chip is designed for edge computing applications and mobile AI workloads.",
+    source: "The Korea Herald",
+    url: "http://www.koreaherald.com/samsung-ai-chips",
+    publishedAt: new Date('2025-08-14T10:15:00Z'),
+    category: "Hardware",
+    region: "South Korea"
+  },
+  {
+    title: "Philippines' Globe Telecom Deploys AI Network Management",
+    content: "Globe Telecom has implemented AI-powered network management systems that automatically optimize performance and predict maintenance needs. This technology improves service quality for millions of Filipino users.",
+    source: "Philippine Daily Inquirer",
+    url: "https://newsinfo.inquirer.net/globe-ai-network",
+    publishedAt: new Date('2025-08-13T15:20:00Z'),
+    category: "Telecommunications",
+    region: "Philippines"
+  },
+  {
+    title: "Singapore's Grab Expands AI-Powered Mobility Platform",
+    content: "Grab has enhanced its mobility platform with AI features including predictive demand forecasting, dynamic route optimization, and intelligent driver matching. These improvements reduce wait times and increase efficiency.",
+    source: "The Straits Times",
+    url: "https://www.straitstimes.com/grab-ai-mobility",
+    publishedAt: new Date('2025-08-12T11:45:00Z'),
+    category: "Mobility",
+    region: "Singapore"
+  },
+  {
+    title: "Indonesia's GoTo Group Launches AI Financial Services",
+    content: "GoTo Group has introduced AI-powered financial services including automated lending decisions, fraud detection, and personalized financial advice. This expands financial inclusion across Indonesia's archipelago.",
+    source: "The Jakarta Post",
+    url: "https://www.thejakartapost.com/goto-ai-financial",
+    publishedAt: new Date('2025-08-11T14:30:00Z'),
+    category: "Fintech",
+    region: "Indonesia"
+  },
+  {
+    title: "Malaysia's Petronas Develops AI Oil Exploration Platform",
+    content: "Petronas has developed an AI platform for oil exploration that analyzes geological data to identify promising drilling locations. This technology has increased discovery rates by 25%.",
+    source: "Malay Mail",
+    url: "https://www.malaymail.com/petronas-ai-exploration",
+    publishedAt: new Date('2025-08-10T16:15:00Z'),
+    category: "Energy",
+    region: "Malaysia"
+  },
+  {
+    title: "Australia's Atlassian Integrates AI into Development Tools",
+    content: "Atlassian has enhanced its development tools with AI capabilities including automated code review, intelligent project management, and predictive issue tracking. These features improve developer productivity.",
+    source: "ABC News",
+    url: "https://www.abc.net.au/news/atlassian-ai-development",
+    publishedAt: new Date('2025-08-09T09:30:00Z'),
+    category: "Software Development",
+    region: "Australia"
+  },
+  {
+    title: "New Zealand's Xero Launches AI-Powered Accounting",
+    content: "Xero has introduced AI features to its accounting platform including automated expense categorization, intelligent financial reporting, and predictive cash flow analysis.",
+    source: "NZ Herald",
+    url: "https://www.nzherald.co.nz/xero-ai-accounting",
+    publishedAt: new Date('2025-08-08T13:45:00Z'),
+    category: "Fintech",
+    region: "New Zealand"
+  },
+  {
+    title: "Argentina's MercadoLibre Expands AI Marketplace Features",
+    content: "MercadoLibre has enhanced its marketplace with AI-powered product recommendations, dynamic pricing, and intelligent fraud detection. These features improve the shopping experience for millions of users.",
+    source: "Clarín",
+    url: "https://www.clarin.com/mercadolibre-ai-marketplace",
+    publishedAt: new Date('2025-08-07T12:20:00Z'),
+    category: "E-commerce",
+    region: "Argentina"
+  },
+  {
+    title: "Chile's Falabella Implements AI Retail Solutions",
+    content: "Falabella has deployed AI systems for inventory management, customer behavior analysis, and personalized marketing. These technologies have increased sales by 18% across its retail network.",
+    source: "El Mercurio",
+    url: "https://www.emol.com/falabella-ai-retail",
+    publishedAt: new Date('2025-08-06T15:10:00Z'),
+    category: "Retail",
+    region: "Chile"
+  },
+  {
+    title: "Colombia's Rappi Enhances Delivery with AI",
+    content: "Rappi has integrated AI into its delivery platform for route optimization, demand prediction, and automated customer service. This improves delivery times and customer satisfaction.",
+    source: "El Tiempo",
+    url: "https://www.eltiempo.com/rappi-ai-delivery",
+    publishedAt: new Date('2025-08-05T14:25:00Z'),
+    category: "Logistics",
+    region: "Colombia"
+  },
+  {
+    title: "South Africa's Naspers Invests in AI Startups",
+    content: "Naspers has announced a $500 million investment fund focused on AI startups across Africa. This initiative aims to accelerate AI innovation and digital transformation on the continent.",
+    source: "News24",
+    url: "https://www.news24.com/naspers-ai-investment",
+    publishedAt: new Date('2025-08-04T11:40:00Z'),
+    category: "Investment",
+    region: "South Africa"
+  },
+  {
+    title: "Kenya's Safaricom Launches AI-Powered M-Pesa",
+    content: "Safaricom has enhanced M-Pesa with AI features including fraud detection, credit scoring, and personalized financial services. This expands financial inclusion across East Africa.",
+    source: "Daily Nation",
+    url: "https://nation.africa/safaricom-ai-mpesa",
+    publishedAt: new Date('2025-08-03T16:50:00Z'),
+    category: "Fintech",
+    region: "Kenya"
+  },
+  {
+    title: "Nigeria's Flutterwave Integrates AI Payment Security",
+    content: "Flutterwave has implemented AI-powered security systems for its payment platform, reducing fraud by 40% and improving transaction success rates across Africa.",
+    source: "Punch",
+    url: "https://punchng.com/flutterwave-ai-security",
+    publishedAt: new Date('2025-08-02T13:15:00Z'),
+    category: "Cybersecurity",
+    region: "Nigeria"
+  },
+  {
+    title: "Egypt's Fawry Expands AI Financial Services",
+    content: "Fawry has launched AI-powered financial services including automated investment advice, risk assessment, and personalized banking solutions for Egyptian consumers.",
+    source: "Al-Ahram",
+    url: "https://english.ahram.org.eg/fawry-ai-financial",
+    publishedAt: new Date('2025-08-01T10:30:00Z'),
+    category: "Fintech",
+    region: "Egypt"
   }
 ];
 
@@ -245,7 +390,7 @@ export class NewsScraper {
     // 3. Implement source-specific parsing
     // 4. Return articles from selected sources
     
-    // For now, filter existing articles based on source names
+    // For now, filter existing articles based on source names and return more diverse results
     const sourceNames = sources.map(s => s.name);
     const filteredArticles = INTERNATIONAL_NEWS_SOURCES.filter(article => 
       sourceNames.some(sourceName => 
@@ -254,16 +399,24 @@ export class NewsScraper {
       )
     );
     
-    // If no exact matches, return a subset of articles with some randomization
+    // If no exact matches, return a diverse subset of articles
     if (filteredArticles.length === 0) {
       const shuffled = [...INTERNATIONAL_NEWS_SOURCES].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, Math.min(10, sources.length * 2)).map(article => ({
+      return shuffled.slice(0, Math.min(20, sources.length * 3)).map(article => ({
         ...article,
         publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)
       }));
     }
     
-    return filteredArticles.map(article => ({
+    // Return filtered articles plus some additional diverse content
+    const additionalArticles = INTERNATIONAL_NEWS_SOURCES
+      .filter(article => !filteredArticles.includes(article))
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 10);
+    
+    const allArticles = [...filteredArticles, ...additionalArticles];
+    
+    return allArticles.map(article => ({
       ...article,
       publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)
     }));
@@ -299,12 +452,12 @@ export class NewsScraper {
     
     // Map country IDs to regions for filtering
     const countryRegionMap: { [key: string]: string } = {
-      'us': 'US', 'ca': 'US', 'mx': 'US',
-      'gb': 'UK', 'de': 'EU', 'fr': 'EU', 'es': 'EU', 'it': 'EU', 'nl': 'EU', 'se': 'EU', 'no': 'EU', 'fi': 'EU', 'ch': 'EU', 'ie': 'EU', 'pl': 'EU',
-      'jp': 'Asia', 'kr': 'Asia', 'in': 'Asia', 'ph': 'Asia', 'sg': 'Asia', 'id': 'Asia', 'my': 'Asia',
-      'au': 'Oceania', 'nz': 'Oceania',
-      'br': 'South America', 'ar': 'South America', 'cl': 'South America', 'co': 'South America',
-      'za': 'Africa', 'ke': 'Africa', 'ng': 'Africa', 'eg': 'Africa'
+      'us': 'US', 'ca': 'Canada', 'mx': 'Mexico',
+      'gb': 'UK', 'de': 'Germany', 'fr': 'France', 'es': 'Spain', 'it': 'Italy', 'nl': 'Netherlands', 'se': 'Sweden', 'no': 'Norway', 'fi': 'Finland', 'ch': 'Switzerland', 'ie': 'Ireland', 'pl': 'Poland',
+      'jp': 'Japan', 'kr': 'South Korea', 'in': 'India', 'ph': 'Philippines', 'sg': 'Singapore', 'id': 'Indonesia', 'my': 'Malaysia',
+      'au': 'Australia', 'nz': 'New Zealand',
+      'br': 'Brazil', 'ar': 'Argentina', 'cl': 'Chile', 'co': 'Colombia',
+      'za': 'South Africa', 'ke': 'Kenya', 'ng': 'Nigeria', 'eg': 'Egypt'
     };
     
     const region = countryRegionMap[countryId] || 'Global';

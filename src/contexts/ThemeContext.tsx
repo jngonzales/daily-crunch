@@ -29,6 +29,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', theme);
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
+    
+    // Force dark mode on initial load if no theme is saved
+    if (!localStorage.getItem('theme')) {
+      document.documentElement.classList.add('dark');
+    }
   }, [theme]);
 
   const toggleTheme = () => {
