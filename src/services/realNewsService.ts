@@ -1,7 +1,6 @@
 // Real news service that fetches actual news from RSS feeds and news APIs
 // This will provide real, diverse news content from each country
 
-import Parser from 'rss-parser';
 import axios from 'axios';
 
 export interface RealNewsArticle {
@@ -404,12 +403,67 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
 ];
 
 export class RealNewsService {
-  private static parser = new Parser({
-    timeout: 10000,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+  // Browser-compatible RSS parser using DOMParser
+  private static parseRSSXML(xmlString: string): any {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+      
+      // Check for parsing errors
+      const parserError = xmlDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('XML parsing error: ' + parserError.textContent);
+      }
+      
+      // Extract feed information
+      const channel = xmlDoc.querySelector('channel') || xmlDoc.querySelector('feed');
+      if (!channel) {
+        throw new Error('Invalid RSS/Atom feed: no channel or feed element found');
+      }
+      
+      // Get feed title and description
+      const feedTitle = channel.querySelector('title')?.textContent || 'Unknown Feed';
+      const feedDescription = channel.querySelector('description')?.textContent || '';
+      
+      // Parse items
+      const items: any[] = [];
+      const itemElements = xmlDoc.querySelectorAll('item, entry');
+      
+      itemElements.forEach(item => {
+        const title = item.querySelector('title')?.textContent || '';
+        const link = item.querySelector('link')?.textContent || item.querySelector('link')?.getAttribute('href') || '';
+        const description = item.querySelector('description, summary, content')?.textContent || '';
+        const pubDateElement = item.querySelector('pubDate, published, updated');
+        const pubDate = pubDateElement?.textContent || '';
+        
+        // Look for enclosures (images)
+        const enclosure = item.querySelector('enclosure');
+        const enclosureUrl = enclosure?.getAttribute('url') || '';
+        
+        if (title && link) {
+          items.push({
+            title,
+            link,
+            description,
+            content: description,
+            contentSnippet: description,
+            summary: description,
+            pubDate,
+            enclosure: enclosureUrl ? { url: enclosureUrl } : undefined
+          });
+        }
+      });
+      
+      return {
+        title: feedTitle,
+        description: feedDescription,
+        items
+      };
+    } catch (error) {
+      console.error('RSS parsing error:', error);
+      throw error;
     }
-  });
+  }
 
   // Fallback news API (NewsAPI.org) - free tier
   private static NEWS_API_KEY = 'demo'; // Using demo key for free access
@@ -435,8 +489,8 @@ export class RealNewsService {
         return [];
       }
 
-      // Parse the RSS feed
-      const feed = await this.parser.parseString(response.data);
+      // Parse the RSS feed using browser-compatible parser
+      const feed = this.parseRSSXML(response.data);
       
       if (!feed.items || feed.items.length === 0) {
         console.warn(`No items found in RSS feed for ${source.name}`);
