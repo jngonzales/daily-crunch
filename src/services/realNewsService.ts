@@ -2,7 +2,6 @@
 // This will provide real, diverse news content from each country
 
 import axios from 'axios';
-import { TranslationService } from './translationService';
 
 export interface RealNewsArticle {
   id: string;
@@ -441,7 +440,6 @@ export class RealNewsService {
       // Check for parsing errors
       const parserError = xmlDoc.querySelector('parsererror');
       if (parserError) {
-        console.warn('XML parsing failed for RSS feed');
         throw new Error('Invalid XML format');
       }
       
@@ -521,7 +519,6 @@ export class RealNewsService {
   // Fetch news from RSS feeds
   static async fetchNewsFromRSS(source: NewsSource): Promise<RealNewsArticle[]> {
     try {
-      console.log(`Fetching RSS from ${source.name}: ${source.rssUrl}`);
       
       // Use a CORS proxy to avoid CORS issues in the browser
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.rssUrl)}`;
@@ -531,7 +528,6 @@ export class RealNewsService {
       });
 
       if (!response.data) {
-        console.warn(`No data received from ${source.name}`);
         return [];
       }
 
@@ -539,7 +535,6 @@ export class RealNewsService {
       const feed = this.parseRSSXML(response.data);
       
       if (!feed.items || feed.items.length === 0) {
-        console.warn(`No items found in RSS feed for ${source.name}`);
         return [];
       }
 
@@ -548,17 +543,23 @@ export class RealNewsService {
         .filter(item => item.title && item.link) // Filter out items without title or link
         .slice(0, 10) // Limit to 10 articles per source
         .map((item, index) => {
-          // Parse date safely
+          // Parse date safely with multiple fallbacks
           let publishedAt = new Date();
-          if (item.pubDate) {
+          if (item.pubDate && item.pubDate.trim()) {
             try {
-              const parsedDate = new Date(item.pubDate);
-              if (!isNaN(parsedDate.getTime())) {
+              const parsedDate = new Date(item.pubDate.trim());
+              if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900) {
                 publishedAt = parsedDate;
               }
             } catch (error) {
-              console.warn('Invalid date format:', item.pubDate);
+              // Fallback to current date if parsing fails
+              publishedAt = new Date();
             }
+          }
+          
+          // Ensure publishedAt is always a valid Date object
+          if (!(publishedAt instanceof Date) || isNaN(publishedAt.getTime())) {
+            publishedAt = new Date();
           }
           
           // Extract content from different possible fields with better fallbacks
@@ -618,49 +619,18 @@ export class RealNewsService {
           return article;
         });
 
-      console.log(`Successfully fetched ${articles.length} articles from ${source.name}`);
+      // Silently return articles
       
-              // Auto-translate non-English content
-        const translatedArticles = await Promise.all(
-          articles.map(async (article) => {
-            try {
-              const wasTranslated = TranslationService.isLikelyNonEnglish(article.title) || 
-                                   article.summary.some(s => TranslationService.isLikelyNonEnglish(s));
-              
-              if (wasTranslated) {
-                const translated = await TranslationService.translateArticleContent(
-                  article.title, 
-                  article.summary
-                );
-                
-                return {
-                  ...article,
-                  title: translated.title,
-                  summary: translated.summary,
-                  isTranslated: true
-                };
-              } else {
-                return {
-                  ...article,
-                  isTranslated: false
-                };
-              }
-            } catch (error) {
-              console.warn(`Translation failed for article: ${article.title}`);
-              return { ...article, isTranslated: false }; // Return original if translation fails
-            }
-          })
-        );
+              // Disable auto-translation to avoid rate limiting
+        const translatedArticles = articles.map(article => ({
+          ...article,
+          isTranslated: false
+        }));
       
       return translatedArticles;
     } catch (error) {
-      // Reduce console noise - only log actual errors, not network issues
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('CORS') && !errorMessage.includes('Failed to fetch')) {
-        console.warn(`RSS fetch failed for ${source.name}:`, errorMessage);
-      }
-      
-      return []; // Don't try fallback API for individual sources - it's rate limited
+      // Silently handle all RSS errors to reduce console noise
+      return [];
     }
   }
 
@@ -824,7 +794,6 @@ export class RealNewsService {
   // Fetch news from multiple sources with fallback
   static async fetchNewsFromSources(sources: NewsSource[]): Promise<RealNewsArticle[]> {
     try {
-      console.log(`Fetching news from ${sources.length} sources...`);
       
       const allArticles: RealNewsArticle[] = [];
       
@@ -841,17 +810,11 @@ export class RealNewsService {
         }
       });
       
-      // If we got no articles from RSS feeds, try the fallback API
-      if (allArticles.length === 0) {
-        console.log('No articles from RSS feeds, trying fallback API...');
-        const fallbackArticles = await this.fetchNewsFromAPI();
-        allArticles.push(...fallbackArticles);
-      }
+      // Skip fallback API to avoid rate limiting issues
       
       // Sort by publish date (newest first)
       const sortedArticles = allArticles.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
       
-      console.log(`Successfully fetched ${sortedArticles.length} total articles`);
       return sortedArticles;
     } catch (error) {
       console.error('Failed to fetch news from sources:', error);

@@ -45,9 +45,33 @@ export class NewsService {
       const articles = querySnapshot.docs
         .map(doc => {
           const data = doc.data();
+          
+          // Ensure publishedAt is a proper Date object
+          let publishedAt = new Date();
+          if (data.publishedAt) {
+            try {
+              if (data.publishedAt.toDate) {
+                // Firebase Timestamp
+                publishedAt = data.publishedAt.toDate();
+              } else if (data.publishedAt instanceof Date) {
+                publishedAt = data.publishedAt;
+              } else {
+                publishedAt = new Date(data.publishedAt);
+              }
+              
+              // Validate the date
+              if (isNaN(publishedAt.getTime())) {
+                publishedAt = new Date();
+              }
+            } catch (error) {
+              publishedAt = new Date();
+            }
+          }
+          
           return {
             ...data as SavedArticle,
             id: doc.id,
+            publishedAt: publishedAt,
             savedAt: data.savedAt?.toDate() || new Date(),
           };
         })

@@ -481,13 +481,8 @@ const Index = () => {
                     </span>
                   </div>
                   
-                  {/* Debug info */}
-                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                    Debug: User ID: {currentUser?.uid}, Saved articles: {savedArticles.length}
-                  </div>
-                  
                   {savedArticles.length === 0 ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-12 bg-background">
                       <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2 text-foreground">No saved articles yet</h3>
                       <p className="text-muted-foreground mb-4">
@@ -498,7 +493,7 @@ const Index = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 bg-background">
                       {savedArticles.map((article, index) => (
                         <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
                           <ArticleCard 
