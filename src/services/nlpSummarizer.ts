@@ -1,7 +1,10 @@
 import { pipeline } from '@huggingface/transformers';
 
+// Define a type for the summarizer pipeline
+type SummarizerPipeline = (text: string, options?: { max_length?: number; min_length?: number }) => Promise<Array<{ summary_text: string }> | { summary_text: string }>;
+
 export class NLPSummarizer {
-  private static summarizer: any = null;
+  private static summarizer: SummarizerPipeline | null = null;
   private static isInitialized = false;
 
   static async initialize(): Promise<void> {
