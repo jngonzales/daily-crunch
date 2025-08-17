@@ -18,6 +18,15 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Polyfill Node.js modules for browser compatibility
+      "events": path.resolve(__dirname, "./src/lib/events.ts"),
     },
+  },
+  define: {
+    // Ensure global variables are available
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['@huggingface/transformers'],
   },
 }));

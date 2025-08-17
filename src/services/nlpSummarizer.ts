@@ -1,3 +1,5 @@
+// Import comprehensive polyfills first
+import '../lib/polyfills';
 import { pipeline } from '@huggingface/transformers';
 
 // Define a type for the summarizer pipeline
@@ -20,6 +22,12 @@ export class NLPSummarizer {
       await Promise.race([
         (async () => {
           try {
+            // Ensure polyfills are available globally
+            if (typeof window !== 'undefined' && !(window as any).EventEmitter) {
+              console.warn('Polyfills not available, importing comprehensive polyfills');
+              await import('../lib/polyfills');
+            }
+
             // Suppress console warnings during initialization
             const originalWarn = console.warn;
             const originalError = console.error;
