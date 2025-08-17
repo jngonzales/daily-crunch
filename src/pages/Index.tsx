@@ -44,7 +44,7 @@ const Index = () => {
         await Promise.race([
           NLPSummarizer.initialize(),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Initialization timeout')), 20000)
+            setTimeout(() => reject(new Error('Initialization timeout')), 15000)
           )
         ]);
         

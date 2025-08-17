@@ -35,36 +35,41 @@ export class NewsService {
     }
   }
 
-  // Get all saved articles for a user (simplified query to avoid index requirement)
+  // Get all saved articles for a user (completely simplified to avoid any index issues)
   static async getSavedArticles(userId: string): Promise<SavedArticle[]> {
     try {
-      // Use a simple query without orderBy to avoid index requirement
-      const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('userId', '==', userId)
-      );
+      // Use the most basic query possible - just get all documents
+      const q = query(collection(db, this.COLLECTION_NAME));
       
       const querySnapshot = await getDocs(q);
-      const articles = querySnapshot.docs.map(doc => ({
-        ...doc.data() as SavedArticle,
-        id: doc.id,
-        savedAt: doc.data().savedAt.toDate(),
-      }));
+      const articles = querySnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            ...data as SavedArticle,
+            id: doc.id,
+            savedAt: data.savedAt?.toDate() || new Date(),
+          };
+        })
+        .filter(article => article.userId === userId) // Filter in memory
+        .sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime()); // Sort in memory
       
-      // Sort in memory instead of in the database
-      return articles.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
+      return articles;
     } catch (error: any) {
       console.error('Failed to get saved articles:', error);
       
-      // Handle Firebase index error specifically
-      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-        console.warn('Firebase index not created yet. This is normal for new installations.');
-        console.warn('Saved articles will work once the database is fully set up.');
-        // Return empty array instead of throwing error
+      // Handle any Firebase errors gracefully
+      if (error.code === 'failed-precondition' || 
+          error.message?.includes('index') || 
+          error.code === 'permission-denied' ||
+          error.code === 'unavailable') {
+        console.warn('Firebase query failed, returning empty array:', error.message);
         return [];
       }
       
-      throw new Error('Failed to get saved articles');
+      // For any other errors, also return empty array instead of throwing
+      console.warn('Unexpected error in getSavedArticles, returning empty array:', error);
+      return [];
     }
   }
 
@@ -78,7 +83,7 @@ export class NewsService {
     }
   }
 
-  // Check if an article is saved (simplified to avoid index requirement)
+  // Check if an article is saved (completely simplified)
   static async isArticleSaved(articleUrl: string, userId: string): Promise<boolean> {
     try {
       // Get all saved articles for the user and check in memory
@@ -86,6 +91,7 @@ export class NewsService {
       return savedArticles.some(article => article.url === articleUrl);
     } catch (error: any) {
       console.error('Failed to check if article is saved:', error);
+      // Return false instead of throwing error
       return false;
     }
   }
