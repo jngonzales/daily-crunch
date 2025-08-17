@@ -20,17 +20,58 @@ export class NLPSummarizer {
       await Promise.race([
         (async () => {
           try {
-            // Initialize the summarization pipeline
-            this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
-              device: 'webgpu' // Use WebGPU for better performance
-            });
-            this.isInitialized = true;
-            console.log('NLP Summarizer initialized successfully with WebGPU');
+            // Suppress console warnings during initialization
+            const originalWarn = console.warn;
+            const originalError = console.error;
+            
+            // Temporarily suppress warnings
+            console.warn = (...args) => {
+              const message = args[0]?.toString() || '';
+              // Only suppress specific WebGPU and ONNX warnings
+              if (message.includes('dtype not specified') || 
+                  message.includes('powerPreference') ||
+                  message.includes('Some nodes were not assigned') ||
+                  message.includes('Rerunning with verbose output')) {
+                return; // Suppress these warnings
+              }
+              originalWarn.apply(console, args);
+            };
+            
+            console.error = (...args) => {
+              const message = args[0]?.toString() || '';
+              // Only suppress specific ONNX warnings
+              if (message.includes('Some nodes were not assigned') ||
+                  message.includes('Rerunning with verbose output')) {
+                return; // Suppress these warnings
+              }
+              originalError.apply(console, args);
+            };
+
+            try {
+              // Try WebGPU first
+              this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
+                device: 'webgpu',
+                quantized: false // Disable quantization to avoid warnings
+              });
+              this.isInitialized = true;
+              console.log('NLP Summarizer initialized successfully with WebGPU');
+            } catch (webgpuError) {
+              console.warn('WebGPU not available, falling back to CPU');
+              // Try CPU fallback
+              this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
+                device: 'cpu',
+                quantized: false
+              });
+              this.isInitialized = true;
+              console.log('NLP Summarizer initialized with CPU');
+            }
+            
+            // Restore original console methods
+            console.warn = originalWarn;
+            console.error = originalError;
           } catch (error) {
-            console.warn('WebGPU not available, falling back to CPU');
-            this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6');
-            this.isInitialized = true;
-            console.log('NLP Summarizer initialized with CPU');
+            console.warn('AI model initialization failed, using fallback mode:', error);
+            this.isInitialized = false;
           }
         })(),
         timeoutPromise
