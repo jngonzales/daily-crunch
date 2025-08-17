@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Clock, TrendingUp, Globe, Bookmark, BookmarkCheck } from "lucide-react";
+import { ExternalLink, Clock, TrendingUp, Globe, Bookmark, BookmarkCheck, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewsService } from "@/services/newsService";
@@ -22,9 +22,11 @@ export interface Article {
 interface ArticleCardProps {
   article: Article;
   onSaveChange?: () => void;
+  isRead?: boolean;
+  onMarkAsRead?: () => void;
 }
 
-export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
+export const ArticleCard = ({ article, onSaveChange, isRead = false, onMarkAsRead }: ArticleCardProps) => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [isSaved, setIsSaved] = useState(false);
@@ -85,14 +87,55 @@ export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
     }
   };
 
+  const handleMarkAsRead = () => {
+    if (onMarkAsRead) {
+      onMarkAsRead();
+      toast({
+        title: "Article Marked as Read",
+        description: "This article will be hidden after 1 month.",
+      });
+    }
+  };
+
+  const handleMarkAsUnread = () => {
+    if (onMarkAsRead) {
+      // Remove from read list by calling markAsRead again (toggles state)
+      onMarkAsRead();
+      toast({
+        title: "Article Marked as Unread",
+        description: "This article will remain visible.",
+      });
+    }
+  };
+
   return (
-    <Card className="bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in group dark:bg-gradient-card dark:shadow-card dark:hover:shadow-card-hover">
+    <Card className={`bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in group dark:bg-gradient-card dark:shadow-card dark:hover:shadow-card-hover ${
+      isRead ? 'opacity-75 border-l-4 border-l-green-500' : ''
+    }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="font-semibold text-lg leading-tight text-card-foreground group-hover:text-primary transition-colors">
+          <h3 className={`font-semibold text-lg leading-tight text-card-foreground group-hover:text-primary transition-colors ${
+            isRead ? 'line-through text-muted-foreground' : ''
+          }`}>
             {article.title}
           </h3>
           <div className="flex items-center gap-2">
+            {/* Mark as Read/Unread Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={isRead ? handleMarkAsUnread : handleMarkAsRead}
+              className="h-8 w-8 p-0 hover:bg-accent/20"
+              title={isRead ? "Mark as unread" : "Mark as read"}
+            >
+              {isRead ? (
+                <EyeOff className="h-4 w-4 text-green-500" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+            
+            {/* Save Button */}
             {currentUser && (
               <Button
                 variant="ghost"
@@ -108,6 +151,7 @@ export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
                 )}
               </Button>
             )}
+            
             <Badge variant="outline" className="shrink-0 text-accent border-accent/20">
               {article.source}
             </Badge>
@@ -130,6 +174,11 @@ export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
               <Globe className="h-3 w-3" />
               <span>{article.region}</span>
             </div>
+          )}
+          {isRead && (
+            <Badge variant="secondary" className="text-xs">
+              Read
+            </Badge>
           )}
         </div>
       </CardHeader>

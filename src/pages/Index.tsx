@@ -7,7 +7,7 @@ import { NLPSummarizer } from "@/services/nlpSummarizer";
 import { NewsService, SavedArticle } from "@/services/newsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp, Settings } from "lucide-react";
+import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp, Settings, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +15,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { CountrySelector } from "@/components/CountrySelector";
-import { COUNTRIES, getSourcesByCountry } from "@/data/countries";
+import { COUNTRIES, getSourcesByCountry, getCountryById } from "@/data/countries";
 
 const Index = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -26,10 +26,17 @@ const Index = () => {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
   const [selectedCountries, setSelectedCountries] = useState<string[]>(['us', 'gb', 'ca']); // Default countries
   const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [readArticles, setReadArticles] = useState<Set<string>>(new Set());
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Load read articles from localStorage
+    const savedReadArticles = localStorage.getItem('readArticles');
+    if (savedReadArticles) {
+      setReadArticles(new Set(JSON.parse(savedReadArticles)));
+    }
+
     // Initialize the NLP summarizer with timeout
     const initializeSummarizer = async () => {
       try {
@@ -112,6 +119,28 @@ const Index = () => {
     setSelectedCountries([]);
   };
 
+  // Mark article as read
+  const markArticleAsRead = (articleId: string) => {
+    const newReadArticles = new Set(readArticles);
+    newReadArticles.add(articleId);
+    setReadArticles(newReadArticles);
+    localStorage.setItem('readArticles', JSON.stringify([...newReadArticles]));
+  };
+
+  // Filter out old read articles (older than 1 month)
+  const filterOldReadArticles = (articles: Article[]) => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    return articles.filter(article => {
+      // If article is older than 1 month and marked as read, filter it out
+      if (article.publishedAt < oneMonthAgo && readArticles.has(article.id)) {
+        return false;
+      }
+      return true;
+    });
+  };
+
   const handleScrapeNews = async () => {
     if (selectedCountries.length === 0) {
       toast({
@@ -148,7 +177,7 @@ const Index = () => {
             const summary = await NLPSummarizer.summarizeToPoints(rawArticle.content);
             
             return {
-              id: `article-${index}-${Date.now()}`,
+              id: `article-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               title: rawArticle.title,
               summary,
               source: rawArticle.source,
@@ -161,7 +190,7 @@ const Index = () => {
             console.error(`Failed to process article ${index}:`, error);
             // Return with fallback summary
             return {
-              id: `article-${index}-${Date.now()}`,
+              id: `article-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               title: rawArticle.title,
               summary: ["Article content processing failed", "Please read the full article for details"],
               source: rawArticle.source,
@@ -192,6 +221,28 @@ const Index = () => {
     }
   };
 
+  // Get news for specific country
+  const getNewsForCountry = async (countryId: string) => {
+    if (!countryId) return [];
+    
+    try {
+      const countryNews = await NewsScraper.getNewsByCountry(countryId);
+      return countryNews.map((rawArticle, index) => ({
+        id: `country-${countryId}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: rawArticle.title,
+        summary: rawArticle.summary || ["Article content processing failed", "Please read the full article for details"],
+        source: rawArticle.source,
+        url: rawArticle.url,
+        publishedAt: rawArticle.publishedAt,
+        category: rawArticle.category,
+        region: rawArticle.region,
+      }));
+    } catch (error) {
+      console.error(`Failed to get news for country ${countryId}:`, error);
+      return [];
+    }
+  };
+
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-background">
@@ -209,6 +260,30 @@ const Index = () => {
       </div>
     );
   }
+
+  // Filter articles based on current tab
+  const getFilteredArticles = () => {
+    const filtered = filterOldReadArticles(articles);
+    
+    switch (activeTab) {
+      case 'latest':
+        return filtered;
+      case 'international':
+        return filtered;
+      case 'countries':
+        // Return articles from selected countries
+        return filtered.filter(article => 
+          selectedCountries.some(countryId => {
+            const country = getCountryById(countryId);
+            return country && article.region === country.region;
+          })
+        );
+      default:
+        return filtered;
+    }
+  };
+
+  const filteredArticles = getFilteredArticles();
 
   return (
     <div className="min-h-screen bg-background">
@@ -300,14 +375,19 @@ const Index = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">Latest Tech News</h2>
                   <span className="text-muted-foreground text-sm">
-                    {articles.length} articles • AI summarized
+                    {filteredArticles.length} articles • AI summarized
                   </span>
                 </div>
                 
                 <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                  {articles.map((article, index) => (
+                  {filteredArticles.map((article, index) => (
                     <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                      <ArticleCard 
+                        article={article} 
+                        onSaveChange={refreshSavedArticles}
+                        isRead={readArticles.has(article.id)}
+                        onMarkAsRead={() => markArticleAsRead(article.id)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -337,7 +417,12 @@ const Index = () => {
                     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                       {savedArticles.map((article, index) => (
                         <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                          <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                          <ArticleCard 
+                            article={article} 
+                            onSaveChange={refreshSavedArticles}
+                            isRead={readArticles.has(article.id)}
+                            onMarkAsRead={() => markArticleAsRead(article.id)}
+                          />
                         </div>
                       ))}
                     </div>
@@ -354,9 +439,14 @@ const Index = () => {
                 </div>
                 
                 <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                  {articles.map((article, index) => (
+                  {filteredArticles.map((article, index) => (
                     <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                      <ArticleCard 
+                        article={article} 
+                        onSaveChange={refreshSavedArticles}
+                        isRead={readArticles.has(article.id)}
+                        onMarkAsRead={() => markArticleAsRead(article.id)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -376,6 +466,25 @@ const Index = () => {
                   onSelectAll={handleSelectAllCountries}
                   onClearAll={handleClearAllCountries}
                 />
+
+                {/* Show news from selected countries */}
+                {selectedCountries.length > 0 && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-foreground">News from Selected Countries</h3>
+                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                      {filteredArticles.map((article, index) => (
+                        <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                          <ArticleCard 
+                            article={article} 
+                            onSaveChange={refreshSavedArticles}
+                            isRead={readArticles.has(article.id)}
+                            onMarkAsRead={() => markArticleAsRead(article.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
