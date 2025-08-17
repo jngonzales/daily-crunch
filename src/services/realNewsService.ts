@@ -478,10 +478,7 @@ export class RealNewsService {
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.rssUrl)}`;
       
       const response = await axios.get(proxyUrl, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        timeout: 15000
       });
 
       if (!response.data) {
@@ -502,7 +499,18 @@ export class RealNewsService {
         .filter(item => item.title && item.link) // Filter out items without title or link
         .slice(0, 10) // Limit to 10 articles per source
         .map((item, index) => {
-          const publishedAt = item.pubDate ? new Date(item.pubDate) : new Date();
+          // Parse date safely
+          let publishedAt = new Date();
+          if (item.pubDate) {
+            try {
+              const parsedDate = new Date(item.pubDate);
+              if (!isNaN(parsedDate.getTime())) {
+                publishedAt = parsedDate;
+              }
+            } catch (error) {
+              console.warn('Invalid date format:', item.pubDate);
+            }
+          }
           
           // Extract content from different possible fields
           let content = '';

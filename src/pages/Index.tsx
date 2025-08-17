@@ -19,8 +19,10 @@ import { COUNTRIES, getSourcesByCountry, getCountryById } from "@/data/countries
 
 const Index = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [countryArticles, setCountryArticles] = useState<Article[]>([]);
   const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCountryLoading, setIsCountryLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
@@ -162,34 +164,14 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      let toastDescription = "Getting latest trending news from around the world...";
-      
-      if (selectedCountries.length > 0) {
-        toastDescription = `Getting latest news from ${selectedCountries.length} selected countries...`;
-      }
-      
       toast({
         title: "Fetching News",
-        description: toastDescription,
+        description: "Getting latest trending news from around the world...",
       });
 
-      let realArticles: RealNewsArticle[] = [];
-      
-      if (selectedCountries.length > 0) {
-        // Get news from selected countries
-        const allSources: NewsSource[] = [];
-        selectedCountries.forEach(countryId => {
-          const countrySources = RealNewsService.getSourcesByCountry(countryId);
-          allSources.push(...countrySources);
-        });
-        
-        // Fetch news articles from selected sources
-        realArticles = await RealNewsService.fetchNewsFromSources(allSources);
-      } else {
-        // Get default trending news from all sources
-        const allSources = RealNewsService.getAvailableSources();
-        realArticles = await RealNewsService.fetchNewsFromSources(allSources);
-      }
+      // Get default trending news from all sources (for Latest/International tabs)
+      const allSources = RealNewsService.getAvailableSources();
+      let realArticles = await RealNewsService.fetchNewsFromSources(allSources);
       
       // If no articles from RSS, try fallback
       if (realArticles.length === 0) {
@@ -214,13 +196,9 @@ const Index = () => {
           variant: "destructive",
         });
       } else {
-        const successMessage = selectedCountries.length > 0 
-          ? `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`
-          : `Fetched ${processedArticles.length} trending articles from around the world`;
-          
         toast({
           title: "Success!",
-          description: successMessage,
+          description: `Fetched ${processedArticles.length} trending articles from around the world`,
         });
       }
     } catch (error) {
@@ -232,6 +210,66 @@ const Index = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Separate function for fetching country-specific news
+  const handleFetchCountryNews = async () => {
+    if (selectedCountries.length === 0) return;
+    
+    setIsCountryLoading(true);
+    
+    try {
+      toast({
+        title: "Fetching Country News",
+        description: `Getting latest news from ${selectedCountries.length} selected countries...`,
+      });
+
+      // Get news from selected countries only
+      const allSources: NewsSource[] = [];
+      selectedCountries.forEach(countryId => {
+        const countrySources = RealNewsService.getSourcesByCountry(countryId);
+        allSources.push(...countrySources);
+      });
+      
+      // Fetch news articles from selected sources
+      let realArticles = await RealNewsService.fetchNewsFromSources(allSources);
+      
+      // If no articles from RSS, try fallback for each country
+      if (realArticles.length === 0) {
+        const fallbackPromises = selectedCountries.map(countryId => 
+          RealNewsService.fetchNewsFromAPI(countryId)
+        );
+        const fallbackResults = await Promise.all(fallbackPromises);
+        realArticles = fallbackResults.flat();
+      }
+      
+      // Convert to Article format
+      const processedArticles: Article[] = realArticles.map(convertToArticle);
+
+      setCountryArticles(processedArticles);
+      
+      if (processedArticles.length === 0) {
+        toast({
+          title: "No Country News Available",
+          description: "Unable to fetch news from selected countries. Please try again later.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`,
+        });
+      }
+    } catch (error) {
+      console.error("Country news fetching failed:", error);
+      toast({
+        title: "Country News Fetching Failed",
+        description: "Unable to fetch country news. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCountryLoading(false);
     }
   };
 
@@ -268,23 +306,16 @@ const Index = () => {
 
   // Filter articles based on current tab
   const getFilteredArticles = () => {
-    const filtered = filterOldReadArticles(articles);
-    
     switch (activeTab) {
       case 'latest':
-        return filtered;
+        return filterOldReadArticles(articles);
       case 'international':
-        return filtered;
+        return filterOldReadArticles(articles);
       case 'countries':
-        // Return articles from selected countries
-        return filtered.filter(article => 
-          selectedCountries.some(countryId => {
-            const country = getCountryById(countryId);
-            return country && article.region === country.region;
-          })
-        );
+        // Return country-specific articles (separate state)
+        return filterOldReadArticles(countryArticles);
       default:
-        return filtered;
+        return filterOldReadArticles(articles);
     }
   };
 
@@ -380,6 +411,14 @@ const Index = () => {
         )}
 
         {isLoading && <LoadingState />}
+        {isCountryLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <span className="text-muted-foreground">Fetching country-specific news...</span>
+            </div>
+          </div>
+        )}
 
         {articles.length > 0 && !isLoading && (
           <div className="space-y-6">
@@ -409,7 +448,7 @@ const Index = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">Latest News</h2>
                   <span className="text-muted-foreground text-sm">
-                    {filteredArticles.length} articles • From {selectedCountries.length} countries
+                    {filteredArticles.length} articles • Global coverage
                   </span>
                 </div>
                 
@@ -513,26 +552,36 @@ const Index = () => {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">News from Selected Countries</h3>
                       <Button 
-                        onClick={handleScrapeNews}
+                        onClick={handleFetchCountryNews}
+                        disabled={isCountryLoading}
                         size="sm"
                         className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
                       >
                         <Globe className="h-4 w-4 mr-2" />
-                        Fetch Country News
+                        {isCountryLoading ? "Fetching..." : "Fetch Country News"}
                       </Button>
                     </div>
-                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                      {filteredArticles.map((article, index) => (
-                        <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                          <ArticleCard 
-                            article={article} 
-                            onSaveChange={refreshSavedArticles}
-                            isRead={readArticles.has(article.id)}
-                            onMarkAsRead={() => markArticleAsRead(article.id)}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    {filteredArticles.length === 0 && !isCountryLoading ? (
+                      <div className="text-center py-8">
+                        <Globe className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">
+                          Click "Fetch Country News" to get articles from your selected countries.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                        {filteredArticles.map((article, index) => (
+                          <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                            <ArticleCard 
+                              article={article} 
+                              onSaveChange={refreshSavedArticles}
+                              isRead={readArticles.has(article.id)}
+                              onMarkAsRead={() => markArticleAsRead(article.id)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 
