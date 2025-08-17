@@ -186,7 +186,7 @@ const Index = () => {
               <div className="p-4 rounded-full bg-gradient-hero shadow-glow mb-6">
                 <Sparkles className="h-12 w-12 text-white" />
               </div>
-              <h2 className="text-2xl font-bold mb-3">Welcome to TechNews AI</h2>
+              <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
                 Get the latest international tech news with AI-powered summaries. Click "Scrape News" to start.
               </p>
@@ -233,7 +233,7 @@ const Index = () => {
 
               <TabsContent value="latest" className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Latest Tech News</h2>
+                  <h2 className="text-xl font-semibold text-foreground">Latest Tech News</h2>
                   <span className="text-muted-foreground text-sm">
                     {articles.length} articles • AI summarized
                   </span>
@@ -251,7 +251,7 @@ const Index = () => {
               {currentUser && (
                 <TabsContent value="saved" className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Your Saved Articles</h2>
+                    <h2 className="text-xl font-semibold text-foreground">Your Saved Articles</h2>
                     <span className="text-muted-foreground text-sm">
                       {savedArticles.length} saved articles
                     </span>
@@ -260,7 +260,7 @@ const Index = () => {
                   {savedArticles.length === 0 ? (
                     <div className="text-center py-12">
                       <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No saved articles yet</h3>
+                      <h3 className="text-lg font-medium mb-2 text-foreground">No saved articles yet</h3>
                       <p className="text-muted-foreground mb-4">
                         Save articles you're interested in to read later.
                       </p>
@@ -270,11 +270,11 @@ const Index = () => {
                     </div>
                   ) : (
                     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                                        {savedArticles.map((article, index) => (
-                    <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
-                    </div>
-                  ))}
+                      {savedArticles.map((article, index) => (
+                        <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                          <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </TabsContent>
@@ -282,7 +282,7 @@ const Index = () => {
 
               <TabsContent value="international" className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">International Tech News</h2>
+                  <h2 className="text-xl font-semibold text-foreground">International Tech News</h2>
                   <span className="text-muted-foreground text-sm">
                     Global coverage • Multiple regions
                   </span>

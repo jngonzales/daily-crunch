@@ -86,10 +86,10 @@ export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
   };
 
   return (
-    <Card className="bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in group">
+    <Card className="bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in group dark:bg-gradient-card dark:shadow-card dark:hover:shadow-card-hover">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-lg leading-tight text-card-foreground group-hover:text-primary transition-colors">
             {article.title}
           </h3>
           <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
             </h4>
             <ul className="space-y-1">
               {article.summary.map((point, index) => (
-                <li key={index} className="text-sm leading-relaxed flex items-start gap-2">
+                <li key={index} className="text-sm leading-relaxed flex items-start gap-2 text-card-foreground">
                   <span className="h-1.5 w-1.5 bg-accent rounded-full mt-2 shrink-0" />
                   <span>{point}</span>
                 </li>

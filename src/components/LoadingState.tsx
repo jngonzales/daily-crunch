@@ -5,7 +5,7 @@ export const LoadingState = () => {
   return (
     <div className="space-y-6">
       {Array.from({ length: 3 }).map((_, index) => (
-        <Card key={index} className="bg-gradient-card shadow-card animate-fade-in">
+        <Card key={index} className="bg-gradient-card shadow-card animate-fade-in dark:bg-gradient-card dark:shadow-card">
           <CardContent className="p-6">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">

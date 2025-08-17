@@ -50,8 +50,16 @@ export class NewsService {
         id: doc.id,
         savedAt: doc.data().savedAt.toDate(),
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to get saved articles:', error);
+      
+      // Handle Firebase index error specifically
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.warn('Firebase index not created yet. Please create the required index.');
+        // Return empty array instead of throwing error
+        return [];
+      }
+      
       throw new Error('Failed to get saved articles');
     }
   }
@@ -77,8 +85,15 @@ export class NewsService {
       
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to check if article is saved:', error);
+      
+      // Handle Firebase index error specifically
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.warn('Firebase index not created yet. Please create the required index.');
+        return false;
+      }
+      
       return false;
     }
   }
