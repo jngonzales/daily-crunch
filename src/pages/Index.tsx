@@ -4,14 +4,21 @@ import { ArticleCard, Article } from "@/components/ArticleCard";
 import { LoadingState } from "@/components/LoadingState";
 import { NewsScraper, RawArticle } from "@/services/newsScraper";
 import { NLPSummarizer } from "@/services/nlpSummarizer";
+import { NewsService, SavedArticle } from "@/services/newsService";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [activeTab, setActiveTab] = useState("latest");
+  const { currentUser } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,6 +51,31 @@ const Index = () => {
 
     initializeSummarizer();
   }, [toast]);
+
+  // Load saved articles when user is authenticated
+  useEffect(() => {
+    if (currentUser) {
+      loadSavedArticles();
+    }
+  }, [currentUser]);
+
+  const loadSavedArticles = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const saved = await NewsService.getSavedArticles(currentUser.uid);
+      setSavedArticles(saved);
+    } catch (error) {
+      console.error('Failed to load saved articles:', error);
+    }
+  };
+
+  // Refresh saved articles when they change
+  const refreshSavedArticles = () => {
+    if (currentUser) {
+      loadSavedArticles();
+    }
+  };
 
   const handleScrapeNews = async () => {
     setIsLoading(true);
@@ -142,16 +174,18 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Get the latest tech news with AI-powered summaries. Click "Scrape News" to start.
+                Get the latest international tech news with AI-powered summaries. Click "Scrape News" to start.
               </p>
             </div>
             
-            <Alert className="max-w-md">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                This demo uses sample articles. In production, it would scrape live content from TechCrunch, The Verge, and Wired.
-              </AlertDescription>
-            </Alert>
+            {!currentUser && (
+              <Alert className="max-w-md">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <a href="/auth" className="text-primary hover:underline">Sign up or log in</a> to save articles and access more features.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         )}
 
@@ -159,20 +193,90 @@ const Index = () => {
 
         {articles.length > 0 && !isLoading && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Latest Tech News</h2>
-              <span className="text-muted-foreground text-sm">
-                {articles.length} articles • AI summarized
-              </span>
-            </div>
-            
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-              {articles.map((article, index) => (
-                <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                  <ArticleCard article={article} />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="latest" className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Latest News
+                </TabsTrigger>
+                {currentUser && (
+                  <TabsTrigger value="saved" className="flex items-center gap-2">
+                    <Bookmark className="h-4 w-4" />
+                    Saved ({savedArticles.length})
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="international" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  International
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="latest" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Latest Tech News</h2>
+                  <span className="text-muted-foreground text-sm">
+                    {articles.length} articles • AI summarized
+                  </span>
                 </div>
-              ))}
-            </div>
+                
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                  {articles.map((article, index) => (
+                    <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {currentUser && (
+                <TabsContent value="saved" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Your Saved Articles</h2>
+                    <span className="text-muted-foreground text-sm">
+                      {savedArticles.length} saved articles
+                    </span>
+                  </div>
+                  
+                  {savedArticles.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No saved articles yet</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Save articles you're interested in to read later.
+                      </p>
+                      <Button onClick={() => setActiveTab("latest")}>
+                        Browse Latest News
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                                        {savedArticles.map((article, index) => (
+                    <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                    </div>
+                  ))}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
+
+              <TabsContent value="international" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">International Tech News</h2>
+                  <span className="text-muted-foreground text-sm">
+                    Global coverage • Multiple regions
+                  </span>
+                </div>
+                
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                  {articles.map((article, index) => (
+                    <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                      <ArticleCard article={article} onSaveChange={refreshSavedArticles} />
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </main>
