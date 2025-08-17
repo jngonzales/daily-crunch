@@ -10,9 +10,10 @@ import { Loader2 } from 'lucide-react';
 interface LoginFormProps {
   onSwitchToSignup: () => void;
   onSwitchToForgotPassword: () => void;
+  onSuccess?: () => void;
 }
 
-export function LoginForm({ onSwitchToSignup, onSwitchToForgotPassword }: LoginFormProps) {
+export function LoginForm({ onSwitchToSignup, onSwitchToForgotPassword, onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,11 +26,12 @@ export function LoginForm({ onSwitchToSignup, onSwitchToForgotPassword }: LoginF
 
     try {
       await login(email, password);
-      toast({
-        title: "Success!",
-        description: "You have been logged in successfully.",
-      });
-    } catch (error: any) {
+              toast({
+          title: "Success!",
+          description: "You have been logged in successfully.",
+        });
+        onSuccess?.();
+      } catch (error: any) {
       toast({
         title: "Login Failed",
         description: error.message || "Failed to log in. Please try again.",

@@ -9,9 +9,10 @@ import { Loader2 } from 'lucide-react';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
+  onSuccess?: () => void;
 }
 
-export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
+export function SignupForm({ onSwitchToLogin, onSuccess }: SignupFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,11 +45,12 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
     try {
       await signup(email, password);
-      toast({
-        title: "Account Created!",
-        description: "Your account has been created successfully.",
-      });
-    } catch (error: any) {
+              toast({
+          title: "Account Created!",
+          description: "Your account has been created successfully.",
+        });
+        onSuccess?.();
+      } catch (error: any) {
       toast({
         title: "Signup Failed",
         description: error.message || "Failed to create account. Please try again.",
