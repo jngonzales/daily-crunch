@@ -152,7 +152,11 @@ export const ArticleCard = ({ article, onSaveChange, isRead = false, onMarkAsRea
               </Button>
             )}
             
-            <Badge variant="outline" className="shrink-0 text-accent border-accent/20">
+            {/* Source Badge - Fixed for dark mode visibility */}
+            <Badge 
+              variant="outline" 
+              className="shrink-0 text-accent border-accent/20 bg-background dark:bg-card dark:text-foreground dark:border-border"
+            >
               {article.source}
             </Badge>
           </div>
@@ -176,7 +180,10 @@ export const ArticleCard = ({ article, onSaveChange, isRead = false, onMarkAsRea
             </div>
           )}
           {isRead && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge 
+              variant="secondary" 
+              className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-green-200 dark:border-green-700"
+            >
               Read
             </Badge>
           )}

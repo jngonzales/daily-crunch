@@ -69,7 +69,7 @@ export const Header = ({ onScrape, isLoading }: HeaderProps) => {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {isLoading ? 'Scraping...' : 'Scrape News'}
+              {isLoading ? 'Fetching...' : 'Fetch News'}
             </Button>
           </div>
         </div>
