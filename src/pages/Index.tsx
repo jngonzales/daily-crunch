@@ -66,6 +66,9 @@ const Index = () => {
     };
 
     initializeSummarizer();
+    
+    // Automatically fetch default news on page load
+    handleScrapeNews();
   }, [toast]);
 
   // Load saved articles when user is authenticated
@@ -157,41 +160,50 @@ const Index = () => {
   };
 
   const handleScrapeNews = async () => {
-    if (selectedCountries.length === 0) {
-      toast({
-        title: "No Countries Selected",
-        description: "Please select at least one country to scrape news from.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     
     try {
+      let toastDescription = "Getting latest trending news from around the world...";
+      
+      if (selectedCountries.length > 0) {
+        toastDescription = `Getting latest news from ${selectedCountries.length} selected countries...`;
+      }
+      
       toast({
         title: "Fetching News",
-        description: `Getting latest news from ${selectedCountries.length} countries...`,
+        description: toastDescription,
       });
 
-      // Get all sources from selected countries
-      const allSources: NewsSource[] = [];
-      selectedCountries.forEach(countryId => {
-        const countrySources = RealNewsService.getSourcesByCountry(countryId);
-        allSources.push(...countrySources);
-      });
+      let realArticles: RealNewsArticle[] = [];
       
-      // Fetch news articles from selected sources
-      const realArticles: RealNewsArticle[] = await RealNewsService.fetchNewsFromSources(allSources);
+      if (selectedCountries.length > 0) {
+        // Get news from selected countries
+        const allSources: NewsSource[] = [];
+        selectedCountries.forEach(countryId => {
+          const countrySources = RealNewsService.getSourcesByCountry(countryId);
+          allSources.push(...countrySources);
+        });
+        
+        // Fetch news articles from selected sources
+        realArticles = await RealNewsService.fetchNewsFromSources(allSources);
+      } else {
+        // Get default trending news from all sources
+        const allSources = RealNewsService.getAvailableSources();
+        realArticles = await RealNewsService.fetchNewsFromSources(allSources);
+      }
       
       // Convert to Article format
       const processedArticles: Article[] = realArticles.map(convertToArticle);
 
       setArticles(processedArticles);
       
+      const successMessage = selectedCountries.length > 0 
+        ? `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`
+        : `Fetched ${processedArticles.length} trending articles from around the world`;
+        
       toast({
         title: "Success!",
-        description: `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`,
+        description: successMessage,
       });
     } catch (error) {
       console.error("News fetching failed:", error);
@@ -273,7 +285,7 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Get the latest international news with AI-powered summaries. Go to the Countries tab to select countries, then click "Fetch News" to start.
+                Get the latest trending news from around the world with AI-powered summaries. News is automatically fetched, or use the Countries tab to filter by specific regions.
               </p>
               
               {/* Country Selection */}
@@ -284,7 +296,7 @@ const Index = () => {
                   className="gap-2"
                 >
                   <Settings className="h-4 w-4" />
-                  Select Countries
+                  Select Countries (Optional)
                 </Button>
               </div>
               
@@ -299,17 +311,18 @@ const Index = () => {
                 </div>
               )}
               
-              {selectedCountries.length > 0 && (
-                <div className="text-center">
-                  <Button 
-                    onClick={handleScrapeNews}
-                    className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Fetch News from {selectedCountries.length} Countries
-                  </Button>
-                </div>
-              )}
+              <div className="text-center">
+                <Button 
+                  onClick={handleScrapeNews}
+                  className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  {selectedCountries.length > 0 
+                    ? `Fetch News from ${selectedCountries.length} Countries`
+                    : 'Fetch Trending News'
+                  }
+                </Button>
+              </div>
             </div>
             
             {!currentUser && (
@@ -438,10 +451,16 @@ const Index = () => {
 
               <TabsContent value="countries" className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">Country Selection</h2>
+                  <h2 className="text-xl font-semibold text-foreground">Country-Specific News</h2>
                   <span className="text-muted-foreground text-sm">
-                    {selectedCountries.length} countries selected
+                    Optional: Select countries to filter news by region
                   </span>
+                </div>
+                
+                <div className="bg-muted/20 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    💡 <strong>Tip:</strong> You can get news without selecting countries. Use this tab only if you want news from specific regions.
+                  </p>
                 </div>
                 
                 <CountrySelector
@@ -454,7 +473,17 @@ const Index = () => {
                 {/* Show news from selected countries */}
                 {selectedCountries.length > 0 && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-foreground">News from Selected Countries</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">News from Selected Countries</h3>
+                      <Button 
+                        onClick={handleScrapeNews}
+                        size="sm"
+                        className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+                      >
+                        <Globe className="h-4 w-4 mr-2" />
+                        Fetch Country News
+                      </Button>
+                    </div>
                     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                       {filteredArticles.map((article, index) => (
                         <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
@@ -467,6 +496,16 @@ const Index = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+                
+                {selectedCountries.length === 0 && (
+                  <div className="text-center py-12">
+                    <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2 text-foreground">No Countries Selected</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Select countries above to get region-specific news, or use the main "Fetch Trending News" button for global coverage.
+                    </p>
                   </div>
                 )}
               </TabsContent>
