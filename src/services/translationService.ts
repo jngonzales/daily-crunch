@@ -48,7 +48,7 @@ export class TranslationService {
     return hasNonEnglishChars || hasNonEnglishWords;
   }
   
-  // Translate text to English
+  // Translate text to English with better error handling
   static async translateToEnglish(text: string): Promise<string> {
     if (!text || text.trim().length === 0) return text;
     
@@ -66,27 +66,44 @@ export class TranslationService {
     
     try {
       // Limit text length to avoid API limits
-      const textToTranslate = text.length > 500 ? text.substring(0, 500) + '...' : text;
+      const textToTranslate = text.length > 300 ? text.substring(0, 300) + '...' : text;
       
       const url = `${this.TRANSLATION_API_URL}?q=${encodeURIComponent(textToTranslate)}&langpair=autodetect|en`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        timeout: 5000, // 5 second timeout
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        // Silently return original text for failed requests
+        this.translationCache.set(cacheKey, text);
+        return text;
+      }
+      
       const data = await response.json();
       
       if (data.responseStatus === 200 && data.responseData?.translatedText) {
         const translatedText = data.responseData.translatedText;
         
-        // Cache the translation
-        this.translationCache.set(cacheKey, translatedText);
-        
-        return translatedText;
-      } else {
-        console.warn('Translation failed, returning original text');
-        return text;
+        // Basic validation - if translation looks wrong, use original
+        if (translatedText.length > 0 && translatedText !== 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.') {
+          // Cache the translation
+          this.translationCache.set(cacheKey, translatedText);
+          return translatedText;
+        }
       }
+      
+      // Cache original text if translation failed
+      this.translationCache.set(cacheKey, text);
+      return text;
+      
     } catch (error) {
-      console.warn('Translation error:', error);
-      return text; // Return original text if translation fails
+      // Silently handle errors - just return original text
+      this.translationCache.set(cacheKey, text);
+      return text;
     }
   }
   

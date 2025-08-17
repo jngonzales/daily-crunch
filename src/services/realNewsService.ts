@@ -29,9 +29,18 @@ export interface NewsSource {
   language: string;
 }
 
-// Real news sources with RSS feeds
+// Real news sources with RSS feeds (prioritizing working sources)
 export const REAL_NEWS_SOURCES: NewsSource[] = [
-  // North America
+  // North America - Working sources first
+  {
+    id: 'npr',
+    name: 'NPR News',
+    url: 'https://www.npr.org',
+    rssUrl: 'https://feeds.npr.org/1001/rss.xml',
+    country: 'us',
+    region: 'North America',
+    language: 'en'
+  },
   {
     id: 'cnn',
     name: 'CNN',
@@ -64,6 +73,24 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'TechCrunch',
     url: 'https://techcrunch.com',
     rssUrl: 'https://techcrunch.com/feed/',
+    country: 'us',
+    region: 'North America',
+    language: 'en'
+  },
+  {
+    id: 'ap-news',
+    name: 'Associated Press',
+    url: 'https://apnews.com',
+    rssUrl: 'https://apnews.com/index.rss',
+    country: 'us',
+    region: 'North America',
+    language: 'en'
+  },
+  {
+    id: 'usa-today',
+    name: 'USA Today',
+    url: 'https://www.usatoday.com',
+    rssUrl: 'https://rssfeeds.usatoday.com/usatoday-NewsTopStories',
     country: 'us',
     region: 'North America',
     language: 'en'
@@ -428,32 +455,51 @@ export class RealNewsService {
       const feedTitle = channel.querySelector('title')?.textContent || 'Unknown Feed';
       const feedDescription = channel.querySelector('description')?.textContent || '';
       
-      // Parse items
+      // Parse items with better error handling
       const items: any[] = [];
       const itemElements = xmlDoc.querySelectorAll('item, entry');
       
       itemElements.forEach(item => {
-        const title = item.querySelector('title')?.textContent || '';
-        const link = item.querySelector('link')?.textContent || item.querySelector('link')?.getAttribute('href') || '';
-        const description = item.querySelector('description, summary, content')?.textContent || '';
-        const pubDateElement = item.querySelector('pubDate, published, updated');
-        const pubDate = pubDateElement?.textContent || '';
-        
-        // Look for enclosures (images)
-        const enclosure = item.querySelector('enclosure');
-        const enclosureUrl = enclosure?.getAttribute('url') || '';
-        
-        if (title && link) {
-          items.push({
-            title,
-            link,
-            description,
-            content: description,
-            contentSnippet: description,
-            summary: description,
-            pubDate,
-            enclosure: enclosureUrl ? { url: enclosureUrl } : undefined
-          });
+        try {
+          const title = item.querySelector('title')?.textContent?.trim() || '';
+          
+          // Try multiple ways to get the link
+          let link = '';
+          const linkElement = item.querySelector('link');
+          if (linkElement) {
+            link = linkElement.textContent?.trim() || linkElement.getAttribute('href')?.trim() || '';
+          }
+          
+          // Try multiple content fields
+          const description = item.querySelector('description')?.textContent?.trim() || '';
+          const summary = item.querySelector('summary')?.textContent?.trim() || '';
+          const content = item.querySelector('content')?.textContent?.trim() || 
+                         item.querySelector('content\\:encoded')?.textContent?.trim() || '';
+          
+          const pubDateElement = item.querySelector('pubDate, published, updated, dc\\:date');
+          const pubDate = pubDateElement?.textContent?.trim() || '';
+          
+          // Look for enclosures (images)
+          const enclosure = item.querySelector('enclosure');
+          const enclosureUrl = enclosure?.getAttribute('url') || '';
+          
+          // Only add items with at least a title and link
+          if (title && link) {
+            items.push({
+              title,
+              link,
+              description: description || summary || content,
+              content: content || description || summary,
+              contentSnippet: summary || description,
+              summary: summary || description,
+              'content:encoded': content,
+              pubDate,
+              enclosure: enclosureUrl ? { url: enclosureUrl } : undefined
+            });
+          }
+        } catch (itemError) {
+          // Skip malformed items silently
+          return;
         }
       });
       
@@ -515,25 +561,45 @@ export class RealNewsService {
             }
           }
           
-          // Extract content from different possible fields
+          // Extract content from different possible fields with better fallbacks
           let content = '';
-          if (item.content) {
-            content = item.content;
-          } else if (item.contentSnippet) {
-            content = item.contentSnippet;
-          } else if (item.summary) {
-            content = item.summary;
-          } else if (item.description) {
-            content = item.description;
+          let rawContent = '';
+          
+          // Try multiple content fields in order of preference
+          if (item.content && item.content.trim()) {
+            rawContent = item.content;
+          } else if (item['content:encoded'] && item['content:encoded'].trim()) {
+            rawContent = item['content:encoded'];
+          } else if (item.description && item.description.trim()) {
+            rawContent = item.description;
+          } else if (item.contentSnippet && item.contentSnippet.trim()) {
+            rawContent = item.contentSnippet;
+          } else if (item.summary && item.summary.trim()) {
+            rawContent = item.summary;
           } else {
-            content = item.title || 'No content available';
+            // Use title as last resort but make it more descriptive
+            rawContent = `${item.title || 'News Article'}. Read the full article for complete details.`;
           }
 
           // Clean HTML tags from content
-          content = this.cleanHtmlContent(content);
+          content = this.cleanHtmlContent(rawContent);
+          
+          // If content is still too short, try to extract from other fields
+          if (content.length < 50) {
+            const additionalContent = [
+              item.title,
+              item.description,
+              item.summary,
+              item.contentSnippet
+            ].filter(Boolean).join('. ');
+            
+            if (additionalContent.length > content.length) {
+              content = this.cleanHtmlContent(additionalContent);
+            }
+          }
 
-          // Generate summary from content
-          const summary = this.generateSummary(content);
+          // Generate summary from content with better handling
+          const summary = this.generateSummary(content, item.title || '');
 
           const article = {
             id: `${source.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -588,77 +654,21 @@ export class RealNewsService {
       
       return translatedArticles;
     } catch (error) {
-      console.error(`Failed to fetch news from ${source.name}:`, error);
-      
-      // If RSS fails, try to get at least one article from the fallback API
-      if (source.country) {
-        try {
-          console.log(`Trying fallback API for ${source.name}...`);
-          const fallbackArticles = await this.fetchNewsFromAPI(source.country);
-          return fallbackArticles.slice(0, 5); // Return up to 5 articles
-        } catch (fallbackError) {
-          console.error(`Fallback API also failed for ${source.name}:`, fallbackError);
-        }
+      // Reduce console noise - only log actual errors, not network issues
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes('CORS') && !errorMessage.includes('Failed to fetch')) {
+        console.warn(`RSS fetch failed for ${source.name}:`, errorMessage);
       }
       
-      return [];
+      return []; // Don't try fallback API for individual sources - it's rate limited
     }
   }
 
-  // Fallback: Fetch news from NewsAPI.org
+  // Fallback: Fetch news from NewsAPI.org (disabled due to rate limits)
   static async fetchNewsFromAPI(country?: string): Promise<RealNewsArticle[]> {
-    try {
-      console.log('Using fallback NewsAPI.org service...');
-      
-      const params: any = {
-        apiKey: this.NEWS_API_KEY,
-        pageSize: 50,
-        language: 'en'
-      };
-
-      if (country) {
-        params.country = country;
-      } else {
-        params.category = 'general';
-      }
-
-      const response = await axios.get(`${this.NEWS_API_BASE_URL}/top-headlines`, {
-        params,
-        timeout: 15000
-      });
-
-      if (!response.data?.articles) {
-        console.warn('No articles received from NewsAPI');
-        return [];
-      }
-
-      const articles: RealNewsArticle[] = response.data.articles
-        .filter((article: any) => article.title && article.url)
-        .map((article: any, index: number) => {
-          const content = article.content || article.description || article.title;
-          const summary = this.generateSummary(content);
-
-          return {
-            id: `newsapi-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: article.title,
-            content: content,
-            summary,
-            source: article.source?.name || 'NewsAPI',
-            url: article.url,
-            publishedAt: new Date(article.publishedAt),
-            category: this.detectCategory(article.title, content),
-            region: this.getRegionFromCountry(article.source?.country || 'us'),
-            country: article.source?.country || 'us',
-            imageUrl: article.urlToImage
-          };
-        });
-
-      console.log(`Successfully fetched ${articles.length} articles from NewsAPI`);
-      return articles;
-    } catch (error) {
-      console.error('Failed to fetch news from NewsAPI:', error);
-      return [];
-    }
+    // NewsAPI.org has strict rate limits on free tier, so we'll skip this
+    // to avoid console errors and just return empty array
+    return [];
   }
 
   // Get region from country code
@@ -742,24 +752,73 @@ export class RealNewsService {
     }
   }
 
-  // Generate summary from content
-  private static generateSummary(content: string): string[] {
-    if (!content || content.length < 50) {
-      return ["Article content not available", "Please read the full article for details"];
+  // Generate summary from content with better handling
+  private static generateSummary(content: string, title: string = ''): string[] {
+    if (!content || content.length < 20) {
+      // If we have a title, create a basic summary from it
+      if (title && title.length > 10) {
+        return [
+          title,
+          "Full article content available at the source",
+          "Click 'Read Full Article' for complete details"
+        ];
+      }
+      return ["Article summary not available", "Please read the full article for details"];
     }
     
-    // Split into sentences and filter out short ones
-    const sentences = content
+    // Clean up content first
+    let cleanContent = content
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .replace(/\n+/g, ' ') // Replace newlines with spaces
+      .trim();
+    
+    // If content is very short, supplement with title
+    if (cleanContent.length < 100 && title) {
+      cleanContent = `${title}. ${cleanContent}`;
+    }
+    
+    // Split into sentences and filter appropriately
+    const sentences = cleanContent
       .split(/[.!?]+/)
       .map(s => s.trim())
-      .filter(s => s.length > 20 && s.length < 200)
-      .slice(0, 3);
+      .filter(s => s.length > 15 && s.length < 300) // Allow longer sentences
+      .slice(0, 4); // Allow up to 4 sentences
     
-    if (sentences.length === 0) {
-      return ["Article content not available", "Please read the full article for details"];
+    // If we have good sentences, return them
+    if (sentences.length >= 2) {
+      return sentences;
     }
     
-    return sentences;
+    // If we only have one sentence but it's substantial, break it down
+    if (sentences.length === 1 && sentences[0].length > 100) {
+      const longSentence = sentences[0];
+      // Try to split on common conjunctions
+      const parts = longSentence.split(/(?:, and |, but |, however |; )/);
+      if (parts.length > 1) {
+        return parts.slice(0, 3).map(part => part.trim());
+      }
+      return [longSentence];
+    }
+    
+    // Last resort: create summary from available content
+    if (cleanContent.length > 50) {
+      const words = cleanContent.split(' ');
+      const chunks = [];
+      for (let i = 0; i < Math.min(words.length, 60); i += 20) {
+        const chunk = words.slice(i, i + 20).join(' ');
+        if (chunk.length > 15) {
+          chunks.push(chunk);
+        }
+      }
+      return chunks.length > 0 ? chunks : [cleanContent.substring(0, 200) + '...'];
+    }
+    
+    // Final fallback
+    return [
+      title || "News article available",
+      "Content summary not available",
+      "Read the full article for complete information"
+    ];
   }
 
   // Fetch news from multiple sources with fallback
