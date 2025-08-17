@@ -10,24 +10,35 @@ export class NLPSummarizer {
   static async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Initialization timeout')), 15000); // 15 second timeout
+    });
+
     try {
-      // Initialize the summarization pipeline
-      this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
-        device: 'webgpu' // Use WebGPU for better performance
-      });
-      this.isInitialized = true;
-      console.log('NLP Summarizer initialized successfully');
+      // Try to initialize with timeout
+      await Promise.race([
+        (async () => {
+          try {
+            // Initialize the summarization pipeline
+            this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
+              device: 'webgpu' // Use WebGPU for better performance
+            });
+            this.isInitialized = true;
+            console.log('NLP Summarizer initialized successfully with WebGPU');
+          } catch (error) {
+            console.warn('WebGPU not available, falling back to CPU');
+            this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6');
+            this.isInitialized = true;
+            console.log('NLP Summarizer initialized with CPU');
+          }
+        })(),
+        timeoutPromise
+      ]);
     } catch (error) {
-      console.warn('WebGPU not available, falling back to CPU');
-      try {
-        this.summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6');
-        this.isInitialized = true;
-        console.log('NLP Summarizer initialized with CPU');
-      } catch (cpuError) {
-        console.error('Failed to initialize summarizer:', cpuError);
-        // Set flag to use fallback method
-        this.isInitialized = false;
-      }
+      console.warn('AI model initialization failed or timed out, using fallback mode:', error);
+      // Set flag to use fallback method
+      this.isInitialized = false;
     }
   }
 

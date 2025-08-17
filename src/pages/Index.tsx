@@ -15,19 +15,26 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize the NLP summarizer
+    // Initialize the NLP summarizer with timeout
     const initializeSummarizer = async () => {
       try {
-        await NLPSummarizer.initialize();
+        // Try to initialize AI with a reasonable timeout
+        await Promise.race([
+          NLPSummarizer.initialize(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Initialization timeout')), 20000)
+          )
+        ]);
+        
         toast({
           title: "AI Ready",
           description: "NLP summarizer initialized successfully",
         });
       } catch (error) {
-        console.error("Failed to initialize summarizer:", error);
+        console.warn("AI initialization failed or timed out, using fallback mode:", error);
         toast({
           title: "AI Fallback Mode",
-          description: "Using simplified summarization",
+          description: "Using simplified summarization (no AI model)",
           variant: "default",
         });
       } finally {
