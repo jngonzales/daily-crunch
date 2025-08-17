@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventEmitter Polyfill Test</title>
+</head>
+<body>
+    <h1>EventEmitter Polyfill Test</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        // Import the polyfills
+        import('./src/lib/polyfills.js');
+        
+        // Test EventEmitter functionality
+        setTimeout(() => {
+            const output = document.getElementById('output');
+            
+            try {
+                // Test if EventEmitter is available
+                if (window.EventEmitter) {
+                    output.innerHTML += '<p style="color: green;">✓ EventEmitter is available</p>';
+                    
+                    // Test basic EventEmitter functionality
+                    const emitter = new window.EventEmitter();
+                    
+                    // Test on and emit
+                    let testPassed = false;
+                    emitter.on('test', (data) => {
+                        testPassed = data === 'success';
+                    });
+                    
+                    emitter.emit('test', 'success');
+                    
+                    if (testPassed) {
+                        output.innerHTML += '<p style="color: green;">✓ EventEmitter.on and emit work correctly</p>';
+                    } else {
+                        output.innerHTML += '<p style="color: red;">✗ EventEmitter.on and emit failed</p>';
+                    }
+                    
+                    // Test removeAllListeners
+                    try {
+                        emitter.removeAllListeners();
+                        output.innerHTML += '<p style="color: green;">✓ removeAllListeners works correctly</p>';
+                    } catch (error) {
+                        output.innerHTML += '<p style="color: red;">✗ removeAllListeners failed: ' + error.message + '</p>';
+                    }
+                    
+                    // Test other Node.js globals
+                    if (window.process) {
+                        output.innerHTML += '<p style="color: green;">✓ process polyfill is available</p>';
+                    } else {
+                        output.innerHTML += '<p style="color: red;">✗ process polyfill is missing</p>';
+                    }
+                    
+                    if (window.Buffer) {
+                        output.innerHTML += '<p style="color: green;">✓ Buffer polyfill is available</p>';
+                    } else {
+                        output.innerHTML += '<p style="color: red;">✗ Buffer polyfill is missing</p>';
+                    }
+                    
+                } else {
+                    output.innerHTML += '<p style="color: red;">✗ EventEmitter is not available</p>';
+                }
+            } catch (error) {
+                output.innerHTML += '<p style="color: red;">✗ Error: ' + error.message + '</p>';
+            }
+        }, 100);
+    </script>
+</body>
+</html>
