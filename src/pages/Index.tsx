@@ -11,6 +11,9 @@ import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp } from "lucide-react
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { SignupForm } from "@/components/auth/SignupForm";
+import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 
 const Index = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -18,6 +21,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -75,6 +79,16 @@ const Index = () => {
     if (currentUser) {
       loadSavedArticles();
     }
+  };
+
+  // Handle authentication mode switching
+  const handleAuthModeChange = (mode: 'login' | 'signup' | 'forgot-password' | null) => {
+    setAuthMode(mode);
+  };
+
+  // Close authentication forms
+  const closeAuth = () => {
+    setAuthMode(null);
   };
 
   const handleScrapeNews = async () => {
@@ -182,7 +196,13 @@ const Index = () => {
               <Alert className="max-w-md">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <a href="/auth" className="text-primary hover:underline">Sign up or log in</a> to save articles and access more features.
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-primary hover:underline"
+                    onClick={() => handleAuthModeChange('login')}
+                  >
+                    Sign up or log in
+                  </Button> to save articles and access more features.
                 </AlertDescription>
               </Alert>
             )}
@@ -280,6 +300,43 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      {/* Authentication Overlay */}
+      {authMode && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeAuth}
+              className="absolute -top-12 right-0 text-muted-foreground hover:text-foreground"
+            >
+              ✕ Close
+            </Button>
+            
+            {authMode === 'login' && (
+              <LoginForm
+                onSwitchToSignup={() => handleAuthModeChange('signup')}
+                onSwitchToForgotPassword={() => handleAuthModeChange('forgot-password')}
+                onSuccess={closeAuth}
+              />
+            )}
+            
+            {authMode === 'signup' && (
+              <SignupForm
+                onSwitchToLogin={() => handleAuthModeChange('login')}
+                onSuccess={closeAuth}
+              />
+            )}
+            
+            {authMode === 'forgot-password' && (
+              <ForgotPasswordForm
+                onBackToLogin={() => handleAuthModeChange('login')}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
