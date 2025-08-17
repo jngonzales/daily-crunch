@@ -1,8 +1,12 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Clock, TrendingUp } from "lucide-react";
+import { ExternalLink, Clock, TrendingUp, Globe, Bookmark, BookmarkCheck } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { NewsService } from "@/services/newsService";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 export interface Article {
   id: string;
@@ -12,13 +16,75 @@ export interface Article {
   url: string;
   publishedAt: Date;
   category?: string;
+  region?: string;
 }
 
 interface ArticleCardProps {
   article: Article;
+  onSaveChange?: () => void;
 }
 
-export const ArticleCard = ({ article }: ArticleCardProps) => {
+export const ArticleCard = ({ article, onSaveChange }: ArticleCardProps) => {
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      checkIfSaved();
+    }
+  }, [currentUser, article.url]);
+
+  const checkIfSaved = async () => {
+    try {
+      const saved = await NewsService.isArticleSaved(article.url, currentUser!.uid);
+      setIsSaved(saved);
+    } catch (error) {
+      console.error('Failed to check saved status:', error);
+    }
+  };
+
+  const handleSaveToggle = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save articles.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (isSaved) {
+        await NewsService.removeSavedArticle(article.id);
+        setIsSaved(false);
+        toast({
+          title: "Article Removed",
+          description: "Article removed from your saved list.",
+        });
+        onSaveChange?.();
+      } else {
+        await NewsService.saveArticle(article, currentUser.uid);
+        setIsSaved(true);
+        toast({
+          title: "Article Saved",
+          description: "Article added to your saved list.",
+        });
+        onSaveChange?.();
+      }
+    } catch (error) {
+      toast({
+        title: "Action Failed",
+        description: "Failed to save/remove article. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-card shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in group">
       <CardHeader className="pb-3">
@@ -26,9 +92,26 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
           <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
             {article.title}
           </h3>
-          <Badge variant="outline" className="shrink-0 text-accent border-accent/20">
-            {article.source}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {currentUser && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveToggle}
+                disabled={isSaving}
+                className="h-8 w-8 p-0 hover:bg-accent/20"
+              >
+                {isSaved ? (
+                  <BookmarkCheck className="h-4 w-4 text-accent" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            <Badge variant="outline" className="shrink-0 text-accent border-accent/20">
+              {article.source}
+            </Badge>
+          </div>
         </div>
         
         <div className="flex items-center gap-4 text-muted-foreground text-sm">
@@ -40,6 +123,12 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
             <div className="flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               <span>{article.category}</span>
+            </div>
+          )}
+          {article.region && (
+            <div className="flex items-center gap-1">
+              <Globe className="h-3 w-3" />
+              <span>{article.region}</span>
             </div>
           )}
         </div>

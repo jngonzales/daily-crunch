@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Rss } from "lucide-react";
+import { RefreshCw, Rss, LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "./ThemeToggle";
+import { TimeDisplay } from "./TimeDisplay";
 
 interface HeaderProps {
   onScrape: () => void;
@@ -7,6 +10,16 @@ interface HeaderProps {
 }
 
 export const Header = ({ onScrape, isLoading }: HeaderProps) => {
+  const { currentUser, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <header className="border-b bg-gradient-card shadow-card">
       <div className="container mx-auto px-6 py-4">
@@ -25,18 +38,40 @@ export const Header = ({ onScrape, isLoading }: HeaderProps) => {
             </div>
           </div>
           
-          <Button
-            onClick={onScrape}
-            disabled={isLoading}
-            className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
-          >
-            {isLoading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
+          <div className="flex items-center gap-4">
+            <TimeDisplay />
+            <ThemeToggle />
+            
+            {currentUser && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span>{currentUser.email}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             )}
-            {isLoading ? 'Scraping...' : 'Scrape News'}
-          </Button>
+            
+            <Button
+              onClick={onScrape}
+              disabled={isLoading}
+              className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+            >
+              {isLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isLoading ? 'Scraping...' : 'Scrape News'}
+            </Button>
+          </div>
         </div>
       </div>
     </header>
