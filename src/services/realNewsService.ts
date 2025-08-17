@@ -623,8 +623,12 @@ export class RealNewsService {
   }
 
   // Generate summary points from content
-  static generateSummary(content: string): string[] {
-    const sentences = content.split('. ').filter(s => s.trim().length > 20);
+  static generateSummary(content: { title: string; fullContent: string }): string[] {
+    if (!content || !content.fullContent || typeof content.fullContent !== 'string') {
+      return ["Article content not available", "Please read the full article for details"];
+    }
+    
+    const sentences = content.fullContent.split('. ').filter(s => s.trim().length > 20);
     const summary = sentences.slice(0, 3).map(s => s.trim());
     
     // Ensure we have at least 2 summary points

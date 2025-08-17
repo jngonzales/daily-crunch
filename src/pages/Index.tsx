@@ -25,7 +25,7 @@ const Index = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(['US', 'UK', 'Canada']); // Default countries
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]); // No default countries
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [readArticles, setReadArticles] = useState<Set<string>>(new Set());
   const { currentUser } = useAuth();
@@ -273,25 +273,22 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Get the latest international news with AI-powered summaries. Select countries and click "Fetch News" to start.
+                Get the latest international news with AI-powered summaries. Go to the Countries tab to select countries, then click "Fetch News" to start.
               </p>
               
               {/* Country Selection */}
               <div className="mb-6">
                 <Button 
-                  onClick={() => setShowCountrySelector(!showCountrySelector)}
+                  onClick={() => setActiveTab("countries")}
                   variant="outline"
                   className="gap-2"
                 >
                   <Settings className="h-4 w-4" />
-                  {selectedCountries.length > 0 
-                    ? `${selectedCountries.length} Countries Selected` 
-                    : 'Select Countries'
-                  }
+                  Select Countries
                 </Button>
               </div>
               
-              {showCountrySelector && (
+              {selectedCountries.length > 0 && (
                 <div className="mb-6">
                   <CountrySelector
                     selectedCountries={selectedCountries}
@@ -299,6 +296,18 @@ const Index = () => {
                     onSelectAll={handleSelectAllCountries}
                     onClearAll={handleClearAllCountries}
                   />
+                </div>
+              )}
+              
+              {selectedCountries.length > 0 && (
+                <div className="text-center">
+                  <Button 
+                    onClick={handleScrapeNews}
+                    className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Fetch News from {selectedCountries.length} Countries
+                  </Button>
                 </div>
               )}
             </div>
