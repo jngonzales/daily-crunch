@@ -33,7 +33,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'CNN',
     url: 'https://www.cnn.com',
     rssUrl: 'https://rss.cnn.com/rss/edition.rss',
-    country: 'US',
+    country: 'us',
     region: 'North America',
     language: 'en'
   },
@@ -42,7 +42,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The New York Times',
     url: 'https://www.nytimes.com',
     rssUrl: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
-    country: 'US',
+    country: 'us',
     region: 'North America',
     language: 'en'
   },
@@ -51,7 +51,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Washington Post',
     url: 'https://www.washingtonpost.com',
     rssUrl: 'https://feeds.washingtonpost.com/rss/rss_front-page',
-    country: 'US',
+    country: 'us',
     region: 'North America',
     language: 'en'
   },
@@ -60,7 +60,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'TechCrunch',
     url: 'https://techcrunch.com',
     rssUrl: 'https://techcrunch.com/feed/',
-    country: 'US',
+    country: 'us',
     region: 'North America',
     language: 'en'
   },
@@ -69,7 +69,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'CBC News',
     url: 'https://www.cbc.ca/news',
     rssUrl: 'https://www.cbc.ca/cmlink/rss-topstories',
-    country: 'Canada',
+    country: 'ca',
     region: 'North America',
     language: 'en'
   },
@@ -78,7 +78,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Globe and Mail',
     url: 'https://www.theglobeandmail.com',
     rssUrl: 'https://www.theglobeandmail.com/feed/',
-    country: 'Canada',
+    country: 'ca',
     region: 'North America',
     language: 'en'
   },
@@ -87,7 +87,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'El Universal',
     url: 'https://www.eluniversal.com.mx',
     rssUrl: 'https://www.eluniversal.com.mx/rss.xml',
-    country: 'Mexico',
+    country: 'mx',
     region: 'North America',
     language: 'es'
   },
@@ -98,7 +98,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'BBC News',
     url: 'https://www.bbc.com/news',
     rssUrl: 'https://feeds.bbci.co.uk/news/rss.xml',
-    country: 'UK',
+    country: 'gb',
     region: 'Europe',
     language: 'en'
   },
@@ -107,7 +107,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Guardian',
     url: 'https://www.theguardian.com',
     rssUrl: 'https://www.theguardian.com/world/rss',
-    country: 'UK',
+    country: 'gb',
     region: 'Europe',
     language: 'en'
   },
@@ -116,7 +116,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Reuters',
     url: 'https://www.reuters.com',
     rssUrl: 'https://feeds.reuters.com/reuters/topNews',
-    country: 'UK',
+    country: 'gb',
     region: 'Europe',
     language: 'en'
   },
@@ -125,7 +125,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Deutsche Welle',
     url: 'https://www.dw.com',
     rssUrl: 'https://rss.dw.com/xml/rss-de-all',
-    country: 'Germany',
+    country: 'de',
     region: 'Europe',
     language: 'de'
   },
@@ -134,7 +134,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Le Monde',
     url: 'https://www.lemonde.fr',
     rssUrl: 'https://www.lemonde.fr/rss/une.xml',
-    country: 'France',
+    country: 'fr',
     region: 'Europe',
     language: 'fr'
   },
@@ -143,7 +143,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'El País',
     url: 'https://elpais.com',
     rssUrl: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada.xml',
-    country: 'Spain',
+    country: 'es',
     region: 'Europe',
     language: 'es'
   },
@@ -152,7 +152,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'La Repubblica',
     url: 'https://www.repubblica.it',
     rssUrl: 'https://www.repubblica.it/rss/homepage/rss2.0.xml',
-    country: 'Italy',
+    country: 'it',
     region: 'Europe',
     language: 'it'
   },
@@ -161,7 +161,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'NOS',
     url: 'https://nos.nl',
     rssUrl: 'https://feeds.nos.nl/nosnieuwsalgemeen',
-    country: 'Netherlands',
+    country: 'nl',
     region: 'Europe',
     language: 'nl'
   },
@@ -170,7 +170,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'SVT Nyheter',
     url: 'https://www.svt.se/nyheter',
     rssUrl: 'https://www.svt.se/nyheter/rss.xml',
-    country: 'Sweden',
+    country: 'se',
     region: 'Europe',
     language: 'sv'
   },
@@ -179,7 +179,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'NRK',
     url: 'https://www.nrk.no',
     rssUrl: 'https://www.nrk.no/nyheter/siste.rss',
-    country: 'Norway',
+    country: 'no',
     region: 'Europe',
     language: 'no'
   },
@@ -188,7 +188,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Yle',
     url: 'https://yle.fi',
     rssUrl: 'https://feeds.yle.fi/uutiset/vko/rss.xml',
-    country: 'Finland',
+    country: 'fi',
     region: 'Europe',
     language: 'fi'
   },
@@ -197,7 +197,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'SwissInfo',
     url: 'https://www.swissinfo.ch',
     rssUrl: 'https://www.swissinfo.ch/eng/rss',
-    country: 'Switzerland',
+    country: 'ch',
     region: 'Europe',
     language: 'en'
   },
@@ -206,7 +206,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Irish Times',
     url: 'https://www.irishtimes.com',
     rssUrl: 'https://www.irishtimes.com/rss',
-    country: 'Ireland',
+    country: 'ie',
     region: 'Europe',
     language: 'en'
   },
@@ -215,7 +215,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Gazeta Wyborcza',
     url: 'https://wyborcza.pl',
     rssUrl: 'https://rss.gazeta.pl/pub/rss/gazeta.xml',
-    country: 'Poland',
+    country: 'pl',
     region: 'Europe',
     language: 'pl'
   },
@@ -226,7 +226,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'NHK News',
     url: 'https://www3.nhk.or.jp/news',
     rssUrl: 'https://www3.nhk.or.jp/rss/news/cat0.xml',
-    country: 'Japan',
+    country: 'jp',
     region: 'Asia',
     language: 'ja'
   },
@@ -235,7 +235,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Asahi Shimbun',
     url: 'https://www.asahi.com',
     rssUrl: 'https://rss.asahi.com/rss/asahi/newsheadlines.rdf',
-    country: 'Japan',
+    country: 'jp',
     region: 'Asia',
     language: 'ja'
   },
@@ -244,7 +244,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Korea Herald',
     url: 'http://www.koreaherald.com',
     rssUrl: 'http://www.koreaherald.com/rss/rss.xml',
-    country: 'South Korea',
+    country: 'kr',
     region: 'Asia',
     language: 'en'
   },
@@ -253,7 +253,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Times of India',
     url: 'https://timesofindia.indiatimes.com',
     rssUrl: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms',
-    country: 'India',
+    country: 'in',
     region: 'Asia',
     language: 'en'
   },
@@ -262,7 +262,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Philippine Daily Inquirer',
     url: 'https://newsinfo.inquirer.net',
     rssUrl: 'https://newsinfo.inquirer.net/feed',
-    country: 'Philippines',
+    country: 'ph',
     region: 'Asia',
     language: 'en'
   },
@@ -271,7 +271,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Straits Times',
     url: 'https://www.straitstimes.com',
     rssUrl: 'https://www.straitstimes.com/news/singapore/rss.xml',
-    country: 'Singapore',
+    country: 'sg',
     region: 'Asia',
     language: 'en'
   },
@@ -280,7 +280,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'The Jakarta Post',
     url: 'https://www.thejakartapost.com',
     rssUrl: 'https://www.thejakartapost.com/feed',
-    country: 'Indonesia',
+    country: 'id',
     region: 'Asia',
     language: 'en'
   },
@@ -289,7 +289,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Malay Mail',
     url: 'https://www.malaymail.com',
     rssUrl: 'https://www.malaymail.com/feed',
-    country: 'Malaysia',
+    country: 'my',
     region: 'Asia',
     language: 'en'
   },
@@ -300,7 +300,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'ABC News',
     url: 'https://www.abc.net.au/news',
     rssUrl: 'https://www.abc.net.au/news/feed/4590168/rss.xml',
-    country: 'Australia',
+    country: 'au',
     region: 'Oceania',
     language: 'en'
   },
@@ -309,7 +309,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Sydney Morning Herald',
     url: 'https://www.smh.com.au',
     rssUrl: 'https://www.smh.com.au/rss/feed.xml',
-    country: 'Australia',
+    country: 'au',
     region: 'Oceania',
     language: 'en'
   },
@@ -318,7 +318,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'NZ Herald',
     url: 'https://www.nzherald.co.nz',
     rssUrl: 'https://www.nzherald.co.nz/arc/outboundfeeds/rss/',
-    country: 'New Zealand',
+    country: 'nz',
     region: 'Oceania',
     language: 'en'
   },
@@ -329,7 +329,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Folha de São Paulo',
     url: 'https://www.folha.uol.com.br',
     rssUrl: 'https://feeds.folha.uol.com.br/emcimadahora/rss091.xml',
-    country: 'Brazil',
+    country: 'br',
     region: 'South America',
     language: 'pt'
   },
@@ -338,7 +338,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Clarín',
     url: 'https://www.clarin.com',
     rssUrl: 'https://www.clarin.com/rss/lo-ultimo.xml',
-    country: 'Argentina',
+    country: 'ar',
     region: 'South America',
     language: 'es'
   },
@@ -347,7 +347,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'El Mercurio',
     url: 'https://www.emol.com',
     rssUrl: 'https://www.emol.com/rss/rss.xml',
-    country: 'Chile',
+    country: 'cl',
     region: 'South America',
     language: 'es'
   },
@@ -356,7 +356,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'El Tiempo',
     url: 'https://www.eltiempo.com',
     rssUrl: 'https://www.eltiempo.com/rss/',
-    country: 'Colombia',
+    country: 'co',
     region: 'South America',
     language: 'es'
   },
@@ -367,7 +367,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'News24',
     url: 'https://www.news24.com',
     rssUrl: 'https://www.news24.com/rss',
-    country: 'South Africa',
+    country: 'za',
     region: 'Africa',
     language: 'en'
   },
@@ -376,7 +376,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Daily Nation',
     url: 'https://nation.africa',
     rssUrl: 'https://nation.africa/kenya/news/rss.xml',
-    country: 'Kenya',
+    country: 'ke',
     region: 'Africa',
     language: 'en'
   },
@@ -385,7 +385,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Punch',
     url: 'https://punchng.com',
     rssUrl: 'https://punchng.com/feed/',
-    country: 'Nigeria',
+    country: 'ng',
     region: 'Africa',
     language: 'en'
   },
@@ -394,7 +394,7 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
     name: 'Al-Ahram',
     url: 'https://english.ahram.org.eg',
     rssUrl: 'https://english.ahram.org.eg/rss/feed.aspx',
-    country: 'Egypt',
+    country: 'eg',
     region: 'Africa',
     language: 'en'
   }
@@ -473,7 +473,7 @@ export class RealNewsService {
   // Get country-specific news content
   static getCountrySpecificNews(country: string, category: string): Array<{ title: string; fullContent: string }> {
     const newsDatabase: { [key: string]: { [key: string]: Array<{ title: string; fullContent: string }> } } = {
-      'US': {
+      'us': {
         'Politics': [
           {
             title: "Senate Passes Bipartisan Infrastructure Bill with 69-30 Vote",
@@ -505,7 +505,7 @@ export class RealNewsService {
           }
         ]
       },
-      'UK': {
+      'gb': {
         'Politics': [
           {
             title: "Parliament Debates New Immigration Bill",
@@ -527,7 +527,7 @@ export class RealNewsService {
           }
         ]
       },
-      'Germany': {
+      'de': {
         'Politics': [
           {
             title: "Bundestag Approves New Climate Protection Law",
@@ -545,7 +545,7 @@ export class RealNewsService {
           }
         ]
       },
-      'Japan': {
+      'jp': {
         'Politics': [
           {
             title: "Diet Passes Economic Stimulus Package",
@@ -563,7 +563,7 @@ export class RealNewsService {
           }
         ]
       },
-      'India': {
+      'in': {
         'Politics': [
           {
             title: "Parliament Passes Digital Personal Data Protection Bill",
@@ -581,7 +581,7 @@ export class RealNewsService {
           }
         ]
       },
-      'Australia': {
+      'au': {
         'Politics': [
           {
             title: "Parliament Debates Climate Change Legislation",
@@ -595,7 +595,7 @@ export class RealNewsService {
           }
         ]
       },
-      'Brazil': {
+      'br': {
         'Politics': [
           {
             title: "Congress Approves Tax Reform Bill",
