@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Clock, TrendingUp, Globe, Bookmark, BookmarkCheck, Eye, EyeOff, Languages } from "lucide-react";
+import { ExternalLink, Clock, TrendingUp, Globe, Bookmark, BookmarkCheck, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewsService } from "@/services/newsService";
@@ -17,6 +17,7 @@ export interface Article {
   publishedAt: Date;
   category?: string;
   region?: string;
+  isTranslated?: boolean;
 }
 
 interface ArticleCardProps {
@@ -172,12 +173,18 @@ export const ArticleCard = ({ article, onSaveChange, isRead = false, onMarkAsRea
               }
             </span>
           </div>
-          {article.category && (
-            <div className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              <span>{article.category}</span>
-            </div>
-          )}
+                      {article.category && (
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                <span>{article.category}</span>
+              </div>
+            )}
+            {article.isTranslated && (
+              <div className="flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                <span>Translated</span>
+              </div>
+            )}
           {article.region && (
             <div className="flex items-center gap-1">
               <Globe className="h-3 w-3" />
@@ -211,32 +218,17 @@ export const ArticleCard = ({ article, onSaveChange, isRead = false, onMarkAsRea
             </ul>
           </div>
 
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1 group/btn hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-              asChild
-            >
-              <a href={article.url} target="_blank" rel="noopener noreferrer">
-                Read Full Article
-                <ExternalLink className="h-3 w-3 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
-              </a>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="px-3 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200"
-              onClick={() => {
-                const googleTranslateUrl = `https://translate.google.com/translate?sl=auto&tl=en&u=${encodeURIComponent(article.url)}`;
-                window.open(googleTranslateUrl, '_blank', 'noopener,noreferrer');
-              }}
-              title="Translate to English"
-            >
-              <Languages className="h-3 w-3" />
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full group/btn hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            asChild
+          >
+            <a href={article.url} target="_blank" rel="noopener noreferrer">
+              Read Full Article
+              <ExternalLink className="h-3 w-3 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
+            </a>
+          </Button>
         </div>
       </CardContent>
     </Card>

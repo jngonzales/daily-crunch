@@ -2,6 +2,7 @@
 // This will provide real, diverse news content from each country
 
 import axios from 'axios';
+import { TranslationService } from './translationService';
 
 export interface RealNewsArticle {
   id: string;
@@ -15,6 +16,7 @@ export interface RealNewsArticle {
   region: string;
   country: string;
   imageUrl?: string;
+  isTranslated?: boolean;
 }
 
 export interface NewsSource {
@@ -533,7 +535,7 @@ export class RealNewsService {
           // Generate summary from content
           const summary = this.generateSummary(content);
 
-          return {
+          const article = {
             id: `${source.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: item.title || 'Untitled Article',
             content: content,
@@ -546,10 +548,45 @@ export class RealNewsService {
             country: source.country,
             imageUrl: item.enclosure?.url || undefined
           };
+          
+          return article;
         });
 
       console.log(`Successfully fetched ${articles.length} articles from ${source.name}`);
-      return articles;
+      
+              // Auto-translate non-English content
+        const translatedArticles = await Promise.all(
+          articles.map(async (article) => {
+            try {
+              const wasTranslated = TranslationService.isLikelyNonEnglish(article.title) || 
+                                   article.summary.some(s => TranslationService.isLikelyNonEnglish(s));
+              
+              if (wasTranslated) {
+                const translated = await TranslationService.translateArticleContent(
+                  article.title, 
+                  article.summary
+                );
+                
+                return {
+                  ...article,
+                  title: translated.title,
+                  summary: translated.summary,
+                  isTranslated: true
+                };
+              } else {
+                return {
+                  ...article,
+                  isTranslated: false
+                };
+              }
+            } catch (error) {
+              console.warn(`Translation failed for article: ${article.title}`);
+              return { ...article, isTranslated: false }; // Return original if translation fails
+            }
+          })
+        );
+      
+      return translatedArticles;
     } catch (error) {
       console.error(`Failed to fetch news from ${source.name}:`, error);
       

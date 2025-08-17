@@ -162,6 +162,7 @@ const Index = () => {
       publishedAt: realArticle.publishedAt,
       category: realArticle.category,
       region: realArticle.region,
+      isTranslated: realArticle.isTranslated,
     };
   };
 
