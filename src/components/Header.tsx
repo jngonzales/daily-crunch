@@ -21,7 +21,7 @@ export const Header = ({ onScrape, isLoading }: HeaderProps) => {
   };
 
   return (
-    <header className="border-b bg-gradient-card shadow-card">
+    <header className="border-b border-border bg-gradient-card shadow-card dark:bg-gradient-card dark:shadow-card">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ export const Header = ({ onScrape, isLoading }: HeaderProps) => {
             <Button
               onClick={onScrape}
               disabled={isLoading}
-              className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+              className="bg-gradient-hero hover:shadow-glow transition-all duration-300 text-white"
             >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
