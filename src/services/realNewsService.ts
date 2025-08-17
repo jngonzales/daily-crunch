@@ -412,7 +412,8 @@ export class RealNewsService {
       // Check for parsing errors
       const parserError = xmlDoc.querySelector('parsererror');
       if (parserError) {
-        throw new Error('XML parsing error: ' + parserError.textContent);
+        console.warn('XML parsing failed for RSS feed');
+        throw new Error('Invalid XML format');
       }
       
       // Extract feed information

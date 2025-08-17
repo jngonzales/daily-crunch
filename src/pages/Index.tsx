@@ -80,10 +80,15 @@ const Index = () => {
   }, [currentUser]);
 
   const loadSavedArticles = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('No current user, cannot load saved articles');
+      return;
+    }
     
+    console.log('Loading saved articles for user:', currentUser.uid);
     try {
       const saved = await NewsService.getSavedArticles(currentUser.uid);
+      console.log('Loaded saved articles:', saved.length);
       setSavedArticles(saved);
     } catch (error) {
       console.error('Failed to load saved articles:', error);
@@ -423,7 +428,7 @@ const Index = () => {
         {articles.length > 0 && !isLoading && (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={`grid w-full ${currentUser ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <TabsTrigger value="latest" className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Latest News
@@ -473,6 +478,11 @@ const Index = () => {
                     <span className="text-muted-foreground text-sm">
                       {savedArticles.length} saved articles
                     </span>
+                  </div>
+                  
+                  {/* Debug info */}
+                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                    Debug: User ID: {currentUser?.uid}, Saved articles: {savedArticles.length}
                   </div>
                   
                   {savedArticles.length === 0 ? (
