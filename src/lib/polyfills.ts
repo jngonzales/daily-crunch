@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
   if (!(window as any).process) {
     (window as any).process = {
       env: {
-        NODE_ENV: process.env.NODE_ENV || 'development',
+        NODE_ENV: 'development', // Default to development
       },
       browser: true,
       version: '',
