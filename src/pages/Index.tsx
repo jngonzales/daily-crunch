@@ -18,10 +18,12 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { COUNTRIES, getSourcesByCountry, getCountryById } from "@/data/countries";
 
 const Index = () => {
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [latestArticles, setLatestArticles] = useState<Article[]>([]);
+  const [internationalArticles, setInternationalArticles] = useState<Article[]>([]);
   const [countryArticles, setCountryArticles] = useState<Article[]>([]);
   const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInternationalLoading, setIsInternationalLoading] = useState(false);
   const [isCountryLoading, setIsCountryLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
@@ -81,17 +83,15 @@ const Index = () => {
 
   const loadSavedArticles = async () => {
     if (!currentUser) {
-      console.log('No current user, cannot load saved articles');
       return;
     }
     
-    console.log('Loading saved articles for user:', currentUser.uid);
     try {
       const saved = await NewsService.getSavedArticles(currentUser.uid);
-      console.log('Loaded saved articles:', saved.length);
       setSavedArticles(saved);
     } catch (error) {
-      console.error('Failed to load saved articles:', error);
+      // Silently handle errors
+      setSavedArticles([]);
     }
   };
 
@@ -171,44 +171,36 @@ const Index = () => {
     
     try {
       toast({
-        title: "Fetching News",
-        description: "Getting latest trending news from around the world...",
+        title: "Fetching Latest News",
+        description: "Getting hot trending news from major outlets...",
       });
 
-      // Get default trending news from all sources (for Latest/International tabs)
-      const allSources = RealNewsService.getAvailableSources();
-      let realArticles = await RealNewsService.fetchNewsFromSources(allSources);
+      // Get trending news from major English-speaking sources only
+      const trendingSources = RealNewsService.getAvailableSources().filter(source => 
+        ['us', 'gb', 'ca', 'au'].includes(source.country) && // Major English-speaking countries
+        ['BBC News', 'The Guardian', 'CNN', 'NPR News', 'Associated Press', 'TechCrunch', 'USA Today'].includes(source.name)
+      );
       
-      // If no articles from RSS, try fallback
-      if (realArticles.length === 0) {
-        toast({
-          title: "RSS Feeds Unavailable",
-          description: "Trying alternative news sources...",
-        });
-        
-        // Try fallback API
-        realArticles = await RealNewsService.fetchNewsFromAPI();
-      }
+      let realArticles = await RealNewsService.fetchNewsFromSources(trendingSources);
       
       // Convert to Article format
       const processedArticles: Article[] = realArticles.map(convertToArticle);
 
-      setArticles(processedArticles);
+      setLatestArticles(processedArticles);
       
       if (processedArticles.length === 0) {
         toast({
-          title: "No News Available",
-          description: "Unable to fetch news at this time. Please try again later.",
+          title: "No Trending News Available",
+          description: "Unable to fetch trending news at this time. Please try again later.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Success!",
-          description: `Fetched ${processedArticles.length} trending articles from around the world`,
+          description: `Fetched ${processedArticles.length} trending articles from major news outlets`,
         });
       }
     } catch (error) {
-      console.error("News fetching failed:", error);
       toast({
         title: "News Fetching Failed",
         description: "Unable to fetch news articles. Please try again.",
@@ -216,6 +208,48 @@ const Index = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Separate function for International news
+  const handleFetchInternationalNews = async () => {
+    setIsInternationalLoading(true);
+    
+    try {
+      toast({
+        title: "Fetching International News",
+        description: "Getting diverse news from around the world...",
+      });
+
+      // Get news from all international sources (excluding US-only sources)
+      const internationalSources = RealNewsService.getAvailableSources();
+      let realArticles = await RealNewsService.fetchNewsFromSources(internationalSources);
+      
+      // Convert to Article format
+      const processedArticles: Article[] = realArticles.map(convertToArticle);
+
+      setInternationalArticles(processedArticles);
+      
+      if (processedArticles.length === 0) {
+        toast({
+          title: "No International News Available",
+          description: "Unable to fetch international news at this time. Please try again later.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: `Fetched ${processedArticles.length} international articles from ${internationalSources.length} sources`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "International News Fetching Failed",
+        description: "Unable to fetch international news. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsInternationalLoading(false);
     }
   };
 
@@ -314,14 +348,14 @@ const Index = () => {
   const getFilteredArticles = () => {
     switch (activeTab) {
       case 'latest':
-        return filterOldReadArticles(articles);
+        return filterOldReadArticles(latestArticles);
       case 'international':
-        return filterOldReadArticles(articles);
+        return filterOldReadArticles(internationalArticles);
       case 'countries':
         // Return country-specific articles (separate state)
         return filterOldReadArticles(countryArticles);
       default:
-        return filterOldReadArticles(articles);
+        return filterOldReadArticles(latestArticles);
     }
   };
 
@@ -332,7 +366,7 @@ const Index = () => {
       <Header onScrape={handleScrapeNews} isLoading={isLoading} />
       
       <main className="container mx-auto px-6 py-8">
-        {articles.length === 0 && !isLoading && (
+        {latestArticles.length === 0 && internationalArticles.length === 0 && countryArticles.length === 0 && !isLoading && (
           <div className="flex items-center justify-center min-h-[60vh] flex-col gap-6">
             <div className="text-center">
               <div className="p-4 rounded-full bg-gradient-hero shadow-glow mb-6">
@@ -425,8 +459,16 @@ const Index = () => {
             </div>
           </div>
         )}
+        {isInternationalLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <span className="text-muted-foreground">Fetching international news...</span>
+            </div>
+          </div>
+        )}
 
-        {articles.length > 0 && !isLoading && (
+        {(latestArticles.length > 0 || internationalArticles.length > 0 || countryArticles.length > 0) && !isLoading && (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className={`grid w-full ${currentUser ? 'grid-cols-4' : 'grid-cols-3'}`}>
@@ -454,8 +496,14 @@ const Index = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">Latest News</h2>
                   <span className="text-muted-foreground text-sm">
-                    {filteredArticles.length} articles • Global coverage
+                    {filteredArticles.length} articles • Hot trending news
                   </span>
+                </div>
+
+                <div className="bg-muted/20 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    🔥 <strong>Trending Now:</strong> Hot news from major outlets like BBC, CNN, Guardian, NPR, and Associated Press.
+                  </p>
                 </div>
                 
                 <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -512,23 +560,45 @@ const Index = () => {
               <TabsContent value="international" className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">International News</h2>
-                  <span className="text-muted-foreground text-sm">
-                    Global coverage • Multiple regions
-                  </span>
+                  <Button 
+                    onClick={handleFetchInternationalNews}
+                    disabled={isInternationalLoading}
+                    size="sm"
+                    className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    {isInternationalLoading ? "Fetching..." : "Fetch International News"}
+                  </Button>
+                </div>
+
+                <div className="bg-muted/20 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    🌍 <strong>International Coverage:</strong> Diverse news from all regions including Europe, Asia, Africa, Oceania, and South America.
+                  </p>
                 </div>
                 
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                  {filteredArticles.map((article, index) => (
-                    <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
-                      <ArticleCard 
-                        article={article} 
-                        onSaveChange={refreshSavedArticles}
-                        isRead={readArticles.has(article.id)}
-                        onMarkAsRead={() => markArticleAsRead(article.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {filteredArticles.length === 0 && !isInternationalLoading ? (
+                  <div className="text-center py-12">
+                    <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2 text-foreground">No International Articles Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Click "Fetch International News" to get diverse news from around the world.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                    {filteredArticles.map((article, index) => (
+                      <div key={article.id} style={{ animationDelay: `${index * 100}ms` }}>
+                        <ArticleCard 
+                          article={article} 
+                          onSaveChange={refreshSavedArticles}
+                          isRead={readArticles.has(article.id)}
+                          onMarkAsRead={() => markArticleAsRead(article.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="countries" className="space-y-6">

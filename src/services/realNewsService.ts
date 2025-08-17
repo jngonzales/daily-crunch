@@ -507,7 +507,6 @@ export class RealNewsService {
         items
       };
     } catch (error) {
-      console.error('RSS parsing error:', error);
       throw error;
     }
   }
@@ -805,8 +804,6 @@ export class RealNewsService {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           allArticles.push(...result.value);
-        } else {
-          console.error(`Failed to fetch from ${sources[index].name}:`, result.reason);
         }
       });
       
@@ -816,18 +813,10 @@ export class RealNewsService {
       const sortedArticles = allArticles.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
       
       return sortedArticles;
-    } catch (error) {
-      console.error('Failed to fetch news from sources:', error);
-      
-      // Try fallback API as last resort
-      try {
-        console.log('Trying fallback API as last resort...');
-        return await this.fetchNewsFromAPI();
-      } catch (fallbackError) {
-        console.error('Fallback API also failed:', fallbackError);
+          } catch (error) {
+        // Silently return empty array for any errors
         return [];
       }
-    }
   }
 
   // Get news by country
@@ -861,8 +850,6 @@ export class RealNewsService {
   // Test function to verify RSS fetching works
   static async testRSSFetching(): Promise<boolean> {
     try {
-      console.log('Testing RSS fetching...');
-      
       // Test with a reliable RSS feed
       const testSource: NewsSource = {
         id: 'test-bbc',
@@ -875,16 +862,8 @@ export class RealNewsService {
       };
       
       const articles = await this.fetchNewsFromRSS(testSource);
-      
-      if (articles.length > 0) {
-        console.log('✅ RSS fetching test successful!');
-        return true;
-      } else {
-        console.log('❌ RSS fetching test failed - no articles returned');
-        return false;
-      }
+      return articles.length > 0;
     } catch (error) {
-      console.error('❌ RSS fetching test failed:', error);
       return false;
     }
   }
@@ -896,15 +875,8 @@ export class RealNewsService {
       const reliableSources = REAL_NEWS_SOURCES.slice(0, 3); // First 3 sources
       const articles = await this.fetchNewsFromSources(reliableSources);
       
-      if (articles.length === 0) {
-        // If RSS fails completely, use fallback API
-        console.log('RSS failed, using fallback API for sample news...');
-        return await this.fetchNewsFromAPI();
-      }
-      
       return articles.slice(0, 10); // Return first 10 articles
     } catch (error) {
-      console.error('Failed to get sample news:', error);
       return [];
     }
   }
