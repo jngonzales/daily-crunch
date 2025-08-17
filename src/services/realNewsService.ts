@@ -1,6 +1,9 @@
 // Real news service that fetches actual news from RSS feeds and news APIs
 // This will provide real, diverse news content from each country
 
+import Parser from 'rss-parser';
+import axios from 'axios';
+
 export interface RealNewsArticle {
   id: string;
   title: string;
@@ -401,267 +404,320 @@ export const REAL_NEWS_SOURCES: NewsSource[] = [
 ];
 
 export class RealNewsService {
+  private static parser = new Parser({
+    timeout: 10000,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+  });
+
+  // Fallback news API (NewsAPI.org) - free tier
+  private static NEWS_API_KEY = 'demo'; // Using demo key for free access
+  private static NEWS_API_BASE_URL = 'https://newsapi.org/v2';
+
   // Fetch news from RSS feeds
   static async fetchNewsFromRSS(source: NewsSource): Promise<RealNewsArticle[]> {
     try {
-      // In a real implementation, this would:
-      // 1. Fetch RSS feed from the source
-      // 2. Parse XML content
-      // 3. Extract articles with titles, content, dates
-      // 4. Return structured news data
+      console.log(`Fetching RSS from ${source.name}: ${source.rssUrl}`);
       
-      // For now, simulate RSS fetching with realistic news content
-      const articles = await this.generateRealisticNews(source);
+      // Use a CORS proxy to avoid CORS issues in the browser
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.rssUrl)}`;
+      
+      const response = await axios.get(proxyUrl, {
+        timeout: 15000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+
+      if (!response.data) {
+        console.warn(`No data received from ${source.name}`);
+        return [];
+      }
+
+      // Parse the RSS feed
+      const feed = await this.parser.parseString(response.data);
+      
+      if (!feed.items || feed.items.length === 0) {
+        console.warn(`No items found in RSS feed for ${source.name}`);
+        return [];
+      }
+
+      // Convert RSS items to RealNewsArticle format
+      const articles: RealNewsArticle[] = feed.items
+        .filter(item => item.title && item.link) // Filter out items without title or link
+        .slice(0, 10) // Limit to 10 articles per source
+        .map((item, index) => {
+          const publishedAt = item.pubDate ? new Date(item.pubDate) : new Date();
+          
+          // Extract content from different possible fields
+          let content = '';
+          if (item.content) {
+            content = item.content;
+          } else if (item.contentSnippet) {
+            content = item.contentSnippet;
+          } else if (item.summary) {
+            content = item.summary;
+          } else if (item.description) {
+            content = item.description;
+          } else {
+            content = item.title || 'No content available';
+          }
+
+          // Clean HTML tags from content
+          content = this.cleanHtmlContent(content);
+
+          // Generate summary from content
+          const summary = this.generateSummary(content);
+
+          return {
+            id: `${source.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            title: item.title || 'Untitled Article',
+            content: content,
+            summary,
+            source: source.name,
+            url: item.link || source.url,
+            publishedAt,
+            category: this.detectCategory(item.title || '', content),
+            region: source.region,
+            country: source.country,
+            imageUrl: item.enclosure?.url || undefined
+          };
+        });
+
+      console.log(`Successfully fetched ${articles.length} articles from ${source.name}`);
       return articles;
     } catch (error) {
       console.error(`Failed to fetch news from ${source.name}:`, error);
+      
+      // If RSS fails, try to get at least one article from the fallback API
+      if (source.country) {
+        try {
+          console.log(`Trying fallback API for ${source.name}...`);
+          const fallbackArticles = await this.fetchNewsFromAPI(source.country);
+          return fallbackArticles.slice(0, 5); // Return up to 5 articles
+        } catch (fallbackError) {
+          console.error(`Fallback API also failed for ${source.name}:`, fallbackError);
+        }
+      }
+      
       return [];
     }
   }
 
-  // Generate realistic news content for each source
-  static async generateRealisticNews(source: NewsSource): Promise<RealNewsArticle[]> {
-    const articles: RealNewsArticle[] = [];
-    const now = new Date();
-    
-    // Generate 5-10 articles per source with realistic content
-    const articleCount = 5 + Math.floor(Math.random() * 5);
-    
-    for (let i = 0; i < articleCount; i++) {
-      const article = await this.createRealisticArticle(source, i, now);
-      articles.push(article);
+  // Fallback: Fetch news from NewsAPI.org
+  static async fetchNewsFromAPI(country?: string): Promise<RealNewsArticle[]> {
+    try {
+      console.log('Using fallback NewsAPI.org service...');
+      
+      const params: any = {
+        apiKey: this.NEWS_API_KEY,
+        pageSize: 50,
+        language: 'en'
+      };
+
+      if (country) {
+        params.country = country;
+      } else {
+        params.category = 'general';
+      }
+
+      const response = await axios.get(`${this.NEWS_API_BASE_URL}/top-headlines`, {
+        params,
+        timeout: 15000
+      });
+
+      if (!response.data?.articles) {
+        console.warn('No articles received from NewsAPI');
+        return [];
+      }
+
+      const articles: RealNewsArticle[] = response.data.articles
+        .filter((article: any) => article.title && article.url)
+        .map((article: any, index: number) => {
+          const content = article.content || article.description || article.title;
+          const summary = this.generateSummary(content);
+
+          return {
+            id: `newsapi-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            title: article.title,
+            content: content,
+            summary,
+            source: article.source?.name || 'NewsAPI',
+            url: article.url,
+            publishedAt: new Date(article.publishedAt),
+            category: this.detectCategory(article.title, content),
+            region: this.getRegionFromCountry(article.source?.country || 'us'),
+            country: article.source?.country || 'us',
+            imageUrl: article.urlToImage
+          };
+        });
+
+      console.log(`Successfully fetched ${articles.length} articles from NewsAPI`);
+      return articles;
+    } catch (error) {
+      console.error('Failed to fetch news from NewsAPI:', error);
+      return [];
     }
-    
-    return articles;
   }
 
-  // Create a realistic article based on the source and country
-  static async createRealisticArticle(source: NewsSource, index: number, baseDate: Date): Promise<RealNewsArticle> {
-    const categories = ['Politics', 'Economy', 'Technology', 'Health', 'Education', 'Environment', 'Sports', 'Culture', 'Science', 'International'];
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    
-    // Generate realistic content based on country and category
-    const content = await this.generateArticleContent(source.country, category);
-    
-    // Create summary points
-    const summary = this.generateSummary(content);
-    
-    // Randomize publish date within last 7 days
-    const publishedAt = new Date(baseDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-    
-    return {
-      id: `${source.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: content.title,
-      content: content.fullContent,
-      summary,
-      source: source.name,
-      url: `${source.url}/article-${index}`,
-      publishedAt,
-      category,
-      region: source.region,
-      country: source.country
+  // Get region from country code
+  private static getRegionFromCountry(country: string): string {
+    const regionMap: { [key: string]: string } = {
+      'us': 'North America',
+      'ca': 'North America',
+      'mx': 'North America',
+      'gb': 'Europe',
+      'de': 'Europe',
+      'fr': 'Europe',
+      'es': 'Europe',
+      'it': 'Europe',
+      'nl': 'Europe',
+      'se': 'Europe',
+      'no': 'Europe',
+      'fi': 'Europe',
+      'ch': 'Europe',
+      'ie': 'Europe',
+      'pl': 'Europe',
+      'jp': 'Asia',
+      'kr': 'Asia',
+      'in': 'Asia',
+      'ph': 'Asia',
+      'sg': 'Asia',
+      'id': 'Asia',
+      'my': 'Asia',
+      'au': 'Oceania',
+      'nz': 'Oceania',
+      'br': 'South America',
+      'ar': 'South America',
+      'cl': 'South America',
+      'co': 'South America',
+      'za': 'Africa',
+      'ke': 'Africa',
+      'ng': 'Africa',
+      'eg': 'Africa'
     };
+    
+    return regionMap[country] || 'International';
   }
 
-  // Generate realistic article content based on country and category
-  static async generateArticleContent(country: string, category: string): Promise<{ title: string; fullContent: string }> {
-    const countryNews = this.getCountrySpecificNews(country, category);
-    const randomIndex = Math.floor(Math.random() * countryNews.length);
-    return countryNews[randomIndex];
+  // Clean HTML content
+  private static cleanHtmlContent(content: string): string {
+    if (!content) return '';
+    
+    // Remove HTML tags
+    const cleanContent = content
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+      .replace(/&amp;/g, '&') // Replace &amp; with &
+      .replace(/&lt;/g, '<') // Replace &lt; with <
+      .replace(/&gt;/g, '>') // Replace &gt; with >
+      .replace(/&quot;/g, '"') // Replace &quot; with "
+      .replace(/&#39;/g, "'") // Replace &#39; with '
+      .trim();
+
+    return cleanContent;
   }
 
-  // Get country-specific news content
-  static getCountrySpecificNews(country: string, category: string): Array<{ title: string; fullContent: string }> {
-    const newsDatabase: { [key: string]: { [key: string]: Array<{ title: string; fullContent: string }> } } = {
-      'us': {
-        'Politics': [
-          {
-            title: "Senate Passes Bipartisan Infrastructure Bill with 69-30 Vote",
-            fullContent: "The U.S. Senate has passed a comprehensive infrastructure bill with strong bipartisan support. The $1.2 trillion package includes funding for roads, bridges, broadband internet, and clean energy projects. The bill now moves to the House of Representatives for consideration."
-          },
-          {
-            title: "President Announces New Climate Initiative at UN Summit",
-            fullContent: "President Biden unveiled a new climate initiative at the United Nations Climate Summit, committing the United States to reduce greenhouse gas emissions by 50% by 2030. The plan includes investments in renewable energy and electric vehicle infrastructure."
-          }
-        ],
-        'Economy': [
-          {
-            title: "Federal Reserve Maintains Interest Rates Amid Economic Recovery",
-            fullContent: "The Federal Reserve announced it will maintain current interest rates as the economy continues its recovery from the pandemic. Fed officials noted strong job growth and declining unemployment rates while monitoring inflation concerns."
-          },
-          {
-            title: "Tech Stocks Rally as Earnings Season Exceeds Expectations",
-            fullContent: "Major technology companies reported stronger-than-expected earnings, driving a market rally. Companies like Apple, Microsoft, and Google parent Alphabet all beat analyst estimates, boosting investor confidence."
-          }
-        ],
-        'Technology': [
-          {
-            title: "SpaceX Successfully Launches Starlink Mission",
-            fullContent: "SpaceX successfully launched another batch of Starlink satellites aboard a Falcon 9 rocket. The mission deployed 60 satellites to expand global internet coverage, marking the company's 100th successful landing of a rocket booster."
-          },
-          {
-            title: "Apple Unveils New iPhone with Advanced AI Features",
-            fullContent: "Apple has introduced its latest iPhone model featuring advanced artificial intelligence capabilities, improved camera systems, and enhanced privacy features. The new device includes on-device AI processing for better performance and security."
-          }
-        ]
-      },
-      'gb': {
-        'Politics': [
-          {
-            title: "Parliament Debates New Immigration Bill",
-            fullContent: "Members of Parliament are debating a new immigration bill that would establish a points-based system for foreign workers. The bill aims to attract skilled workers while maintaining border security and controlling migration numbers."
-          },
-          {
-            title: "Prime Minister Announces Green Energy Investment Plan",
-            fullContent: "The Prime Minister has announced a £12 billion investment in green energy projects, including offshore wind farms and hydrogen technology. The plan aims to create jobs and help the UK achieve net-zero emissions by 2050."
-          }
-        ],
-        'Economy': [
-          {
-            title: "Bank of England Raises Interest Rates to Combat Inflation",
-            fullContent: "The Bank of England has raised interest rates by 0.25 percentage points to 4.5% in an effort to combat rising inflation. The move comes as the UK economy shows signs of recovery while facing persistent price pressures."
-          },
-          {
-            title: "London Stock Exchange Reports Strong Q3 Performance",
-            fullContent: "The London Stock Exchange reported strong third-quarter performance with increased trading volumes and new listings. Financial services companies led the gains, while technology and healthcare sectors also showed positive momentum."
-          }
-        ]
-      },
-      'de': {
-        'Politics': [
-          {
-            title: "Bundestag Approves New Climate Protection Law",
-            fullContent: "The German Bundestag has approved a new climate protection law that sets binding emissions targets for all sectors. The law includes measures to accelerate the transition to renewable energy and improve energy efficiency."
-          },
-          {
-            title: "Chancellor Meets with European Leaders on Economic Policy",
-            fullContent: "The German Chancellor has met with European Union leaders to discuss coordinated economic policies and recovery measures. The talks focused on inflation control and sustainable economic growth across the bloc."
-          }
-        ],
-        'Economy': [
-          {
-            title: "German Economy Shows Signs of Recovery in Latest Data",
-            fullContent: "Latest economic data from Germany shows signs of recovery with increased industrial production and consumer spending. The manufacturing sector is leading the rebound, though supply chain challenges remain."
-          }
-        ]
-      },
-      'jp': {
-        'Politics': [
-          {
-            title: "Diet Passes Economic Stimulus Package",
-            fullContent: "The Japanese Diet has passed a comprehensive economic stimulus package worth ¥28 trillion. The package includes measures to support small businesses, boost consumer spending, and accelerate digital transformation."
-          },
-          {
-            title: "Prime Minister Visits Southeast Asian Nations",
-            fullContent: "The Japanese Prime Minister has completed a tour of Southeast Asian nations, strengthening diplomatic and economic ties. The visit included discussions on trade agreements and regional security cooperation."
-          }
-        ],
-        'Technology': [
-          {
-            title: "Japan Launches New Satellite for Climate Monitoring",
-            fullContent: "Japan has successfully launched a new satellite designed to monitor climate change and natural disasters. The satellite will provide high-resolution data on atmospheric conditions and ocean temperatures."
-          }
-        ]
-      },
-      'in': {
-        'Politics': [
-          {
-            title: "Parliament Passes Digital Personal Data Protection Bill",
-            fullContent: "The Indian Parliament has passed the Digital Personal Data Protection Bill, establishing a comprehensive framework for data privacy and protection. The bill includes provisions for data localization and user consent requirements."
-          },
-          {
-            title: "Government Announces New Education Policy Reforms",
-            fullContent: "The Indian government has announced comprehensive reforms to the education system, including changes to curriculum, assessment methods, and teacher training programs. The reforms aim to improve quality and accessibility."
-          }
-        ],
-        'Economy': [
-          {
-            title: "Reserve Bank of India Maintains Accommodative Monetary Policy",
-            fullContent: "The Reserve Bank of India has maintained its accommodative monetary policy stance, keeping interest rates unchanged. The central bank noted improving economic indicators while remaining cautious about inflation risks."
-          }
-        ]
-      },
-      'au': {
-        'Politics': [
-          {
-            title: "Parliament Debates Climate Change Legislation",
-            fullContent: "The Australian Parliament is debating new climate change legislation that would set binding emissions reduction targets. The bill has faced opposition from some political parties but has gained support from business and environmental groups."
-          }
-        ],
-        'Economy': [
-          {
-            title: "Reserve Bank of Australia Raises Interest Rates",
-            fullContent: "The Reserve Bank of Australia has raised interest rates by 0.25 percentage points to 4.35%. The move comes as the economy shows strong growth while inflation remains above target levels."
-          }
-        ]
-      },
-      'br': {
-        'Politics': [
-          {
-            title: "Congress Approves Tax Reform Bill",
-            fullContent: "The Brazilian Congress has approved a comprehensive tax reform bill that simplifies the tax system and reduces compliance costs. The reform is expected to boost economic growth and improve business competitiveness."
-          }
-        ],
-        'Economy': [
-          {
-            title: "Central Bank of Brazil Cuts Interest Rates",
-            fullContent: "The Central Bank of Brazil has cut interest rates by 0.5 percentage points to 12.25%. The decision reflects improving inflation outlook and aims to support economic recovery."
-          }
-        ]
-      }
-    };
-
-    // Return country-specific news or fallback to general content
-    const countryNews = newsDatabase[country]?.[category] || [
-      {
-        title: `${category} News from ${country}`,
-        fullContent: `Latest developments in ${category.toLowerCase()} from ${country}. This article covers recent events and developments that are shaping the current landscape in this important field.`
-      }
-    ];
-
-    return countryNews;
+  // Detect category from title and content
+  private static detectCategory(title: string, content: string): string {
+    const text = (title + ' ' + content).toLowerCase();
+    
+    if (text.includes('tech') || text.includes('technology') || text.includes('ai') || text.includes('artificial intelligence')) {
+      return 'Technology';
+    } else if (text.includes('politics') || text.includes('government') || text.includes('election')) {
+      return 'Politics';
+    } else if (text.includes('economy') || text.includes('business') || text.includes('finance') || text.includes('market')) {
+      return 'Economy';
+    } else if (text.includes('health') || text.includes('medical') || text.includes('covid') || text.includes('vaccine')) {
+      return 'Health';
+    } else if (text.includes('science') || text.includes('research') || text.includes('study')) {
+      return 'Science';
+    } else if (text.includes('sports') || text.includes('football') || text.includes('basketball') || text.includes('tennis')) {
+      return 'Sports';
+    } else if (text.includes('entertainment') || text.includes('movie') || text.includes('music') || text.includes('celebrity')) {
+      return 'Entertainment';
+    } else {
+      return 'General';
+    }
   }
 
-  // Generate summary points from content
-  static generateSummary(content: { title: string; fullContent: string }): string[] {
-    if (!content || !content.fullContent || typeof content.fullContent !== 'string') {
+  // Generate summary from content
+  private static generateSummary(content: string): string[] {
+    if (!content || content.length < 50) {
       return ["Article content not available", "Please read the full article for details"];
     }
     
-    const sentences = content.fullContent.split('. ').filter(s => s.trim().length > 20);
-    const summary = sentences.slice(0, 3).map(s => s.trim());
+    // Split into sentences and filter out short ones
+    const sentences = content
+      .split(/[.!?]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 20 && s.length < 200)
+      .slice(0, 3);
     
-    // Ensure we have at least 2 summary points
-    if (summary.length < 2) {
-      summary.push("Additional details are available in the full article.");
+    if (sentences.length === 0) {
+      return ["Article content not available", "Please read the full article for details"];
     }
     
-    return summary;
+    return sentences;
   }
 
-  // Fetch news from multiple sources
+  // Fetch news from multiple sources with fallback
   static async fetchNewsFromSources(sources: NewsSource[]): Promise<RealNewsArticle[]> {
     try {
+      console.log(`Fetching news from ${sources.length} sources...`);
+      
       const allArticles: RealNewsArticle[] = [];
       
-      // Fetch news from each source
-      for (const source of sources) {
-        const articles = await this.fetchNewsFromRSS(source);
-        allArticles.push(...articles);
+      // Fetch news from each source concurrently
+      const fetchPromises = sources.map(source => this.fetchNewsFromRSS(source));
+      const results = await Promise.allSettled(fetchPromises);
+      
+      // Collect successful results
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          allArticles.push(...result.value);
+        } else {
+          console.error(`Failed to fetch from ${sources[index].name}:`, result.reason);
+        }
+      });
+      
+      // If we got no articles from RSS feeds, try the fallback API
+      if (allArticles.length === 0) {
+        console.log('No articles from RSS feeds, trying fallback API...');
+        const fallbackArticles = await this.fetchNewsFromAPI();
+        allArticles.push(...fallbackArticles);
       }
       
       // Sort by publish date (newest first)
-      return allArticles.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+      const sortedArticles = allArticles.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+      
+      console.log(`Successfully fetched ${sortedArticles.length} total articles`);
+      return sortedArticles;
     } catch (error) {
       console.error('Failed to fetch news from sources:', error);
-      return [];
+      
+      // Try fallback API as last resort
+      try {
+        console.log('Trying fallback API as last resort...');
+        return await this.fetchNewsFromAPI();
+      } catch (fallbackError) {
+        console.error('Fallback API also failed:', fallbackError);
+        return [];
+      }
     }
   }
 
   // Get news by country
   static async getNewsByCountry(countryId: string): Promise<RealNewsArticle[]> {
     const countrySources = REAL_NEWS_SOURCES.filter(source => source.country === countryId);
-    return this.fetchNewsFromSources(countrySources);
+    
+    if (countrySources.length > 0) {
+      return this.fetchNewsFromSources(countrySources);
+    } else {
+      // If no RSS sources for this country, use API
+      return this.fetchNewsFromAPI(countryId);
+    }
   }
 
   // Get news by region
@@ -678,5 +734,56 @@ export class RealNewsService {
   // Get sources by country
   static getSourcesByCountry(countryId: string): NewsSource[] {
     return REAL_NEWS_SOURCES.filter(source => source.country === countryId);
+  }
+
+  // Test function to verify RSS fetching works
+  static async testRSSFetching(): Promise<boolean> {
+    try {
+      console.log('Testing RSS fetching...');
+      
+      // Test with a reliable RSS feed
+      const testSource: NewsSource = {
+        id: 'test-bbc',
+        name: 'BBC News (Test)',
+        url: 'https://www.bbc.com/news',
+        rssUrl: 'https://feeds.bbci.co.uk/news/rss.xml',
+        country: 'gb',
+        region: 'Europe',
+        language: 'en'
+      };
+      
+      const articles = await this.fetchNewsFromRSS(testSource);
+      
+      if (articles.length > 0) {
+        console.log('✅ RSS fetching test successful!');
+        return true;
+      } else {
+        console.log('❌ RSS fetching test failed - no articles returned');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ RSS fetching test failed:', error);
+      return false;
+    }
+  }
+
+  // Get a small sample of news for testing
+  static async getSampleNews(): Promise<RealNewsArticle[]> {
+    try {
+      // Try to get news from a few reliable sources
+      const reliableSources = REAL_NEWS_SOURCES.slice(0, 3); // First 3 sources
+      const articles = await this.fetchNewsFromSources(reliableSources);
+      
+      if (articles.length === 0) {
+        // If RSS fails completely, use fallback API
+        console.log('RSS failed, using fallback API for sample news...');
+        return await this.fetchNewsFromAPI();
+      }
+      
+      return articles.slice(0, 10); // Return first 10 articles
+    } catch (error) {
+      console.error('Failed to get sample news:', error);
+      return [];
+    }
   }
 }

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ArticleCard, Article } from "@/components/ArticleCard";
 import { LoadingState } from "@/components/LoadingState";
-import { NewsScraper, RawArticle } from "@/services/newsScraper";
 import { NLPSummarizer } from "@/services/nlpSummarizer";
 import { NewsService, SavedArticle } from "@/services/newsService";
 import { RealNewsService, RealNewsArticle, NewsSource } from "@/services/realNewsService";
@@ -192,19 +191,38 @@ const Index = () => {
         realArticles = await RealNewsService.fetchNewsFromSources(allSources);
       }
       
+      // If no articles from RSS, try fallback
+      if (realArticles.length === 0) {
+        toast({
+          title: "RSS Feeds Unavailable",
+          description: "Trying alternative news sources...",
+        });
+        
+        // Try fallback API
+        realArticles = await RealNewsService.fetchNewsFromAPI();
+      }
+      
       // Convert to Article format
       const processedArticles: Article[] = realArticles.map(convertToArticle);
 
       setArticles(processedArticles);
       
-      const successMessage = selectedCountries.length > 0 
-        ? `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`
-        : `Fetched ${processedArticles.length} trending articles from around the world`;
-        
-      toast({
-        title: "Success!",
-        description: successMessage,
-      });
+      if (processedArticles.length === 0) {
+        toast({
+          title: "No News Available",
+          description: "Unable to fetch news at this time. Please try again later.",
+          variant: "destructive",
+        });
+      } else {
+        const successMessage = selectedCountries.length > 0 
+          ? `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`
+          : `Fetched ${processedArticles.length} trending articles from around the world`;
+          
+        toast({
+          title: "Success!",
+          description: successMessage,
+        });
+      }
     } catch (error) {
       console.error("News fetching failed:", error);
       toast({
@@ -311,7 +329,7 @@ const Index = () => {
                 </div>
               )}
               
-              <div className="text-center">
+              <div className="text-center space-y-3">
                 <Button 
                   onClick={handleScrapeNews}
                   className="bg-gradient-hero hover:shadow-glow transition-all duration-300"
@@ -322,6 +340,25 @@ const Index = () => {
                     : 'Fetch Trending News'
                   }
                 </Button>
+                
+                <div className="text-xs text-muted-foreground">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={async () => {
+                      const success = await RealNewsService.testRSSFetching();
+                      toast({
+                        title: success ? "RSS Test Successful" : "RSS Test Failed",
+                        description: success 
+                          ? "RSS feeds are working properly" 
+                          : "RSS feeds are not available, using fallback sources",
+                        variant: success ? "default" : "destructive"
+                      });
+                    }}
+                  >
+                    Test RSS Connection
+                  </Button>
+                </div>
               </div>
             </div>
             
