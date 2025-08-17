@@ -11,6 +11,16 @@ export interface RawArticle {
   region?: string;
 }
 
+export interface NewsSource {
+  id: string;
+  name: string;
+  url: string;
+  category: 'general' | 'tech' | 'business' | 'politics' | 'science';
+  language: string;
+  region: string;
+}
+
+// Enhanced international news sources with more diverse content
 const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
   // Latest Tech News (August 2025)
   {
@@ -102,6 +112,106 @@ const INTERNATIONAL_NEWS_SOURCES: RawArticle[] = [
     publishedAt: new Date('2025-08-07T14:15:00Z'),
     category: "Fintech",
     region: "South America"
+  },
+  // Additional international sources
+  {
+    title: "Germany's Siemens Advances Industrial AI with Edge Computing",
+    content: "Siemens has announced a breakthrough in industrial AI applications, combining edge computing with machine learning to optimize manufacturing processes in real-time. The new system reduces energy consumption by 25% and increases production efficiency by 30% across various industrial sectors.",
+    source: "Der Spiegel",
+    url: "https://spiegel.de/siemens-industrial-ai",
+    publishedAt: new Date('2025-08-16T11:00:00Z'),
+    category: "Manufacturing",
+    region: "Germany"
+  },
+  {
+    title: "France's TotalEnergies Invests in AI-Powered Renewable Energy",
+    content: "TotalEnergies has committed €5 billion to AI-powered renewable energy projects, focusing on smart grid optimization and predictive maintenance for wind and solar farms. This investment positions France as a leader in sustainable energy technology.",
+    source: "Le Monde",
+    url: "https://lemonde.fr/total-energies-ai-renewable",
+    publishedAt: new Date('2025-08-15T14:30:00Z'),
+    category: "Energy",
+    region: "France"
+  },
+  {
+    title: "Spain's Telefónica Launches 6G Research Initiative",
+    content: "Telefónica has launched a comprehensive 6G research initiative in partnership with leading Spanish universities and tech companies. The project focuses on AI-driven network optimization and next-generation communication protocols.",
+    source: "El País",
+    url: "https://elpais.com/telefonica-6g-initiative",
+    publishedAt: new Date('2025-08-14T09:15:00Z'),
+    category: "Telecommunications",
+    region: "Spain"
+  },
+  {
+    title: "Italy's Enel Develops Smart City AI Platform",
+    content: "Enel has developed an AI platform for smart city management, integrating IoT sensors with machine learning to optimize urban infrastructure, traffic flow, and energy distribution across Italian cities.",
+    source: "La Repubblica",
+    url: "https://repubblica.it/enel-smart-city-ai",
+    publishedAt: new Date('2025-08-13T16:45:00Z'),
+    category: "Smart Cities",
+    region: "Italy"
+  },
+  {
+    title: "Netherlands' ASML Advances EUV Lithography with AI",
+    content: "ASML has integrated AI into its EUV lithography systems, achieving unprecedented precision in semiconductor manufacturing. This breakthrough enables the production of next-generation chips with 2nm process nodes.",
+    source: "NOS",
+    url: "https://nos.nl/asml-euv-ai",
+    publishedAt: new Date('2025-08-12T12:20:00Z'),
+    category: "Semiconductors",
+    region: "Netherlands"
+  },
+  {
+    title: "Sweden's Ericsson Pioneers AI-Enhanced 5G Networks",
+    content: "Ericsson has developed AI-enhanced 5G network technology that automatically optimizes performance based on real-time traffic patterns and user behavior. This innovation improves network efficiency by 40%.",
+    source: "SVT Nyheter",
+    url: "https://svt.se/ericsson-ai-5g",
+    publishedAt: new Date('2025-08-11T10:30:00Z'),
+    category: "5G",
+    region: "Sweden"
+  },
+  {
+    title: "Norway's Equinor Deploys AI for Offshore Wind Optimization",
+    content: "Equinor has deployed AI systems across its offshore wind farms, using machine learning to predict weather patterns and optimize turbine performance. This technology increases energy output by 15%.",
+    source: "NRK",
+    url: "https://nrk.no/equinor-ai-wind",
+    publishedAt: new Date('2025-08-10T13:15:00Z'),
+    category: "Renewable Energy",
+    region: "Norway"
+  },
+  {
+    title: "Finland's Nokia Advances Quantum Computing Research",
+    content: "Nokia has announced a breakthrough in quantum computing research, developing new quantum algorithms for telecommunications and cybersecurity applications. This research positions Finland at the forefront of quantum technology.",
+    source: "Helsingin Sanomat",
+    url: "https://hs.fi/nokia-quantum-computing",
+    publishedAt: new Date('2025-08-09T15:45:00Z'),
+    category: "Quantum Computing",
+    region: "Finland"
+  },
+  {
+    title: "Switzerland's Roche Develops AI-Powered Drug Discovery Platform",
+    content: "Roche has developed an AI platform that accelerates drug discovery by 10x, using machine learning to predict molecular interactions and optimize drug candidates. This technology could revolutionize pharmaceutical research.",
+    source: "SwissInfo",
+    url: "https://swissinfo.ch/roche-ai-drug-discovery",
+    publishedAt: new Date('2025-08-08T11:20:00Z'),
+    category: "Pharmaceuticals",
+    region: "Switzerland"
+  },
+  {
+    title: "Ireland's Stripe Launches AI-Powered Fraud Detection",
+    content: "Stripe has launched an AI-powered fraud detection system that reduces false positives by 60% while maintaining high security standards. This technology protects millions of online transactions worldwide.",
+    source: "The Irish Times",
+    url: "https://irishtimes.com/stripe-ai-fraud-detection",
+    publishedAt: new Date('2025-08-07T14:10:00Z'),
+    category: "Fintech",
+    region: "Ireland"
+  },
+  {
+    title: "Poland's CD Projekt Red Revolutionizes Gaming with AI",
+    content: "CD Projekt Red has integrated AI into its game development pipeline, creating more realistic NPCs and dynamic storytelling. This innovation sets new standards for immersive gaming experiences.",
+    source: "Gazeta Wyborcza",
+    url: "https://wyborcza.pl/cd-projekt-ai-gaming",
+    publishedAt: new Date('2025-08-06T16:30:00Z'),
+    category: "Gaming",
+    region: "Poland"
   }
 ];
 
@@ -123,6 +233,42 @@ export class NewsScraper {
     }));
   }
 
+  // New method to scrape news from specific sources
+  static async scrapeNewsFromSources(sources: NewsSource[]): Promise<RawArticle[]> {
+    // Simulate API delay based on number of sources
+    const delay = 1000 + (sources.length * 200) + Math.random() * 2000;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // In a real implementation, this would:
+    // 1. Fetch from the specified news sources
+    // 2. Handle different languages and formats
+    // 3. Implement source-specific parsing
+    // 4. Return articles from selected sources
+    
+    // For now, filter existing articles based on source names
+    const sourceNames = sources.map(s => s.name);
+    const filteredArticles = INTERNATIONAL_NEWS_SOURCES.filter(article => 
+      sourceNames.some(sourceName => 
+        article.source.toLowerCase().includes(sourceName.toLowerCase()) ||
+        sourceName.toLowerCase().includes(article.source.toLowerCase())
+      )
+    );
+    
+    // If no exact matches, return a subset of articles with some randomization
+    if (filteredArticles.length === 0) {
+      const shuffled = [...INTERNATIONAL_NEWS_SOURCES].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, Math.min(10, sources.length * 2)).map(article => ({
+        ...article,
+        publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)
+      }));
+    }
+    
+    return filteredArticles.map(article => ({
+      ...article,
+      publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)
+    }));
+  }
+
   // Get news by region
   static async getNewsByRegion(region: string): Promise<RawArticle[]> {
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
@@ -141,6 +287,30 @@ export class NewsScraper {
     
     return INTERNATIONAL_NEWS_SOURCES
       .filter(article => article.category === category)
+      .map(article => ({
+        ...article,
+        publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)
+      }));
+  }
+
+  // Get news by country
+  static async getNewsByCountry(countryId: string): Promise<RawArticle[]> {
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    
+    // Map country IDs to regions for filtering
+    const countryRegionMap: { [key: string]: string } = {
+      'us': 'US', 'ca': 'US', 'mx': 'US',
+      'gb': 'UK', 'de': 'EU', 'fr': 'EU', 'es': 'EU', 'it': 'EU', 'nl': 'EU', 'se': 'EU', 'no': 'EU', 'fi': 'EU', 'ch': 'EU', 'ie': 'EU', 'pl': 'EU',
+      'jp': 'Asia', 'kr': 'Asia', 'in': 'Asia', 'ph': 'Asia', 'sg': 'Asia', 'id': 'Asia', 'my': 'Asia',
+      'au': 'Oceania', 'nz': 'Oceania',
+      'br': 'South America', 'ar': 'South America', 'cl': 'South America', 'co': 'South America',
+      'za': 'Africa', 'ke': 'Africa', 'ng': 'Africa', 'eg': 'Africa'
+    };
+    
+    const region = countryRegionMap[countryId] || 'Global';
+    
+    return INTERNATIONAL_NEWS_SOURCES
+      .filter(article => article.region === region || article.region === 'Global')
       .map(article => ({
         ...article,
         publishedAt: new Date(article.publishedAt.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000)

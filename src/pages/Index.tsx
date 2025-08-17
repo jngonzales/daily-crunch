@@ -7,13 +7,15 @@ import { NLPSummarizer } from "@/services/nlpSummarizer";
 import { NewsService, SavedArticle } from "@/services/newsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp } from "lucide-react";
+import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { CountrySelector } from "@/components/CountrySelector";
+import { COUNTRIES, getSourcesByCountry } from "@/data/countries";
 
 const Index = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -22,6 +24,8 @@ const Index = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(['us', 'gb', 'ca']); // Default countries
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -91,17 +95,46 @@ const Index = () => {
     setAuthMode(null);
   };
 
+  // Handle country selection
+  const handleCountryToggle = (countryId: string) => {
+    setSelectedCountries(prev => 
+      prev.includes(countryId)
+        ? prev.filter(id => id !== countryId)
+        : [...prev, countryId]
+    );
+  };
+
+  const handleSelectAllCountries = () => {
+    setSelectedCountries(COUNTRIES.map(country => country.id));
+  };
+
+  const handleClearAllCountries = () => {
+    setSelectedCountries([]);
+  };
+
   const handleScrapeNews = async () => {
+    if (selectedCountries.length === 0) {
+      toast({
+        title: "No Countries Selected",
+        description: "Please select at least one country to scrape news from.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       toast({
         title: "Scraping Started",
-        description: "Fetching latest tech news from multiple sources...",
+        description: `Fetching latest tech news from ${selectedCountries.length} countries...`,
       });
 
-      // Scrape news articles
-      const rawArticles: RawArticle[] = await NewsScraper.scrapeNews();
+      // Get all sources from selected countries
+      const allSources = selectedCountries.flatMap(countryId => getSourcesByCountry(countryId));
+      
+      // Scrape news articles from selected sources
+      const rawArticles: RawArticle[] = await NewsScraper.scrapeNewsFromSources(allSources);
       
       toast({
         title: "Processing Articles",
@@ -122,6 +155,7 @@ const Index = () => {
               url: rawArticle.url,
               publishedAt: rawArticle.publishedAt,
               category: rawArticle.category,
+              region: rawArticle.region,
             };
           } catch (error) {
             console.error(`Failed to process article ${index}:`, error);
@@ -134,6 +168,7 @@ const Index = () => {
               url: rawArticle.url,
               publishedAt: rawArticle.publishedAt,
               category: rawArticle.category,
+              region: rawArticle.region,
             };
           }
         })
@@ -143,7 +178,7 @@ const Index = () => {
       
       toast({
         title: "Success!",
-        description: `Processed ${processedArticles.length} articles with AI summaries`,
+        description: `Processed ${processedArticles.length} articles from ${selectedCountries.length} countries with AI summaries`,
       });
     } catch (error) {
       console.error("Scraping failed:", error);
@@ -188,8 +223,34 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Get the latest international tech news with AI-powered summaries. Click "Scrape News" to start.
+                Get the latest international tech news with AI-powered summaries. Select countries and click "Scrape News" to start.
               </p>
+              
+              {/* Country Selection */}
+              <div className="mb-6">
+                <Button 
+                  onClick={() => setShowCountrySelector(!showCountrySelector)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  {selectedCountries.length > 0 
+                    ? `${selectedCountries.length} Countries Selected` 
+                    : 'Select Countries'
+                  }
+                </Button>
+              </div>
+              
+              {showCountrySelector && (
+                <div className="mb-6">
+                  <CountrySelector
+                    selectedCountries={selectedCountries}
+                    onCountryToggle={handleCountryToggle}
+                    onSelectAll={handleSelectAllCountries}
+                    onClearAll={handleClearAllCountries}
+                  />
+                </div>
+              )}
             </div>
             
             {!currentUser && (
@@ -214,7 +275,7 @@ const Index = () => {
         {articles.length > 0 && !isLoading && (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="latest" className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Latest News
@@ -228,6 +289,10 @@ const Index = () => {
                 <TabsTrigger value="international" className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   International
+                </TabsTrigger>
+                <TabsTrigger value="countries" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Countries
                 </TabsTrigger>
               </TabsList>
 
@@ -295,6 +360,22 @@ const Index = () => {
                     </div>
                   ))}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="countries" className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-foreground">Country Selection</h2>
+                  <span className="text-muted-foreground text-sm">
+                    {selectedCountries.length} countries selected
+                  </span>
+                </div>
+                
+                <CountrySelector
+                  selectedCountries={selectedCountries}
+                  onCountryToggle={handleCountryToggle}
+                  onSelectAll={handleSelectAllCountries}
+                  onClearAll={handleClearAllCountries}
+                />
               </TabsContent>
             </Tabs>
           </div>
