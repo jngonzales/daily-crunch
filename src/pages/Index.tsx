@@ -5,6 +5,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { NewsScraper, RawArticle } from "@/services/newsScraper";
 import { NLPSummarizer } from "@/services/nlpSummarizer";
 import { NewsService, SavedArticle } from "@/services/newsService";
+import { RealNewsService, RealNewsArticle, NewsSource } from "@/services/realNewsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, Sparkles, Bookmark, Globe, TrendingUp, Settings, Eye, EyeOff } from "lucide-react";
@@ -24,7 +25,7 @@ const Index = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState("latest");
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | null>(null);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>(['us', 'gb', 'ca']); // Default countries
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(['US', 'UK', 'Canada']); // Default countries
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [readArticles, setReadArticles] = useState<Set<string>>(new Set());
   const { currentUser } = useAuth();
@@ -141,6 +142,20 @@ const Index = () => {
     });
   };
 
+  // Convert RealNewsArticle to Article format
+  const convertToArticle = (realArticle: RealNewsArticle): Article => {
+    return {
+      id: realArticle.id,
+      title: realArticle.title,
+      summary: realArticle.summary,
+      source: realArticle.source,
+      url: realArticle.url,
+      publishedAt: realArticle.publishedAt,
+      category: realArticle.category,
+      region: realArticle.region,
+    };
+  };
+
   const handleScrapeNews = async () => {
     if (selectedCountries.length === 0) {
       toast({
@@ -155,64 +170,33 @@ const Index = () => {
     
     try {
       toast({
-        title: "Scraping Started",
-        description: `Fetching latest tech news from ${selectedCountries.length} countries...`,
+        title: "Fetching News",
+        description: `Getting latest news from ${selectedCountries.length} countries...`,
       });
 
       // Get all sources from selected countries
-      const allSources = selectedCountries.flatMap(countryId => getSourcesByCountry(countryId));
-      
-      // Scrape news articles from selected sources
-      const rawArticles: RawArticle[] = await NewsScraper.scrapeNewsFromSources(allSources);
-      
-      toast({
-        title: "Processing Articles",
-        description: "Generating AI-powered summaries...",
+      const allSources: NewsSource[] = [];
+      selectedCountries.forEach(countryId => {
+        const countrySources = RealNewsService.getSourcesByCountry(countryId);
+        allSources.push(...countrySources);
       });
-
-      // Process articles with AI summarization
-      const processedArticles: Article[] = await Promise.all(
-        rawArticles.map(async (rawArticle, index) => {
-          try {
-            const summary = await NLPSummarizer.summarizeToPoints(rawArticle.content);
-            
-            return {
-              id: `article-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              title: rawArticle.title,
-              summary,
-              source: rawArticle.source,
-              url: rawArticle.url,
-              publishedAt: rawArticle.publishedAt,
-              category: rawArticle.category,
-              region: rawArticle.region,
-            };
-          } catch (error) {
-            console.error(`Failed to process article ${index}:`, error);
-            // Return with fallback summary
-            return {
-              id: `article-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              title: rawArticle.title,
-              summary: ["Article content processing failed", "Please read the full article for details"],
-              source: rawArticle.source,
-              url: rawArticle.url,
-              publishedAt: rawArticle.publishedAt,
-              category: rawArticle.category,
-              region: rawArticle.region,
-            };
-          }
-        })
-      );
+      
+      // Fetch news articles from selected sources
+      const realArticles: RealNewsArticle[] = await RealNewsService.fetchNewsFromSources(allSources);
+      
+      // Convert to Article format
+      const processedArticles: Article[] = realArticles.map(convertToArticle);
 
       setArticles(processedArticles);
       
       toast({
         title: "Success!",
-        description: `Processed ${processedArticles.length} articles from ${selectedCountries.length} countries with AI summaries`,
+        description: `Fetched ${processedArticles.length} articles from ${selectedCountries.length} countries`,
       });
     } catch (error) {
-      console.error("Scraping failed:", error);
+      console.error("News fetching failed:", error);
       toast({
-        title: "Scraping Failed",
+        title: "News Fetching Failed",
         description: "Unable to fetch news articles. Please try again.",
         variant: "destructive",
       });
@@ -222,21 +206,12 @@ const Index = () => {
   };
 
   // Get news for specific country
-  const getNewsForCountry = async (countryId: string) => {
+  const getNewsForCountry = async (countryId: string): Promise<Article[]> => {
     if (!countryId) return [];
     
     try {
-      const countryNews = await NewsScraper.getNewsByCountry(countryId);
-      return countryNews.map((rawArticle, index) => ({
-        id: `country-${countryId}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        title: rawArticle.title,
-        summary: rawArticle.summary || ["Article content processing failed", "Please read the full article for details"],
-        source: rawArticle.source,
-        url: rawArticle.url,
-        publishedAt: rawArticle.publishedAt,
-        category: rawArticle.category,
-        region: rawArticle.region,
-      }));
+      const countryNews = await RealNewsService.getNewsByCountry(countryId);
+      return countryNews.map(convertToArticle);
     } catch (error) {
       console.error(`Failed to get news for country ${countryId}:`, error);
       return [];
@@ -298,7 +273,7 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-foreground">Welcome to TechNews AI</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Get the latest international tech news with AI-powered summaries. Select countries and click "Scrape News" to start.
+                Get the latest international news with AI-powered summaries. Select countries and click "Fetch News" to start.
               </p>
               
               {/* Country Selection */}
@@ -373,9 +348,9 @@ const Index = () => {
 
               <TabsContent value="latest" className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">Latest Tech News</h2>
+                  <h2 className="text-xl font-semibold text-foreground">Latest News</h2>
                   <span className="text-muted-foreground text-sm">
-                    {filteredArticles.length} articles • AI summarized
+                    {filteredArticles.length} articles • From {selectedCountries.length} countries
                   </span>
                 </div>
                 
@@ -432,7 +407,7 @@ const Index = () => {
 
               <TabsContent value="international" className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-foreground">International Tech News</h2>
+                  <h2 className="text-xl font-semibold text-foreground">International News</h2>
                   <span className="text-muted-foreground text-sm">
                     Global coverage • Multiple regions
                   </span>
